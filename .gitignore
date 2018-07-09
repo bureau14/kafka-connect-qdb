@@ -1,0 +1,15 @@
+*.dll
+*.exe
+*.iml
+qdbd.*.txt
+.idea/
+/*.log
+/bin/
+/lib/
+/out/
+/target/
+/jni/target/
+.gradle/
+.settings/
+build/
+/qdb/
