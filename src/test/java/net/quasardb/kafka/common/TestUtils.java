@@ -5,12 +5,15 @@ import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 import java.util.function.Supplier;
 
+import java.io.IOException;
+
 import net.quasardb.qdb.Session;
 
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Row;
 import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Timespec;
+import net.quasardb.qdb.ts.Table;
 
 public class TestUtils {
 
@@ -24,6 +27,10 @@ public class TestUtils {
         return generateTableColumns(Value.Type.DOUBLE, count);
     }
 
+    public static Column generateTableColumn(Value.Type valueType) {
+        return generateTableColumns(valueType, 1)[0];
+    }
+
     public static Column[] generateTableColumns(Value.Type valueType, int count) {
         return Stream.generate(TestUtils::createUniqueAlias)
             .limit(count)
@@ -31,6 +38,17 @@ public class TestUtils {
                     return new Column(alias, valueType);
                 })
             .toArray(Column[]::new);
+    }
+
+    /**
+     * Creates a new QuasarDB table based on a column layout. Assigns a random
+     * name to it. Uses default shard size.
+     */
+    public static Table createTable(Session session,
+                                    Column[] columns) throws IOException {
+        return Table.create(session,
+                            createUniqueAlias(),
+                            columns);
     }
 
     public static Value generateRandomValueByType(int complexity, Value.Type valueType) {
