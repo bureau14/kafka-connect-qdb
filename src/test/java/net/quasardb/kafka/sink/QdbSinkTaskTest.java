@@ -8,6 +8,9 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import net.quasardb.qdb.ts.Table;
+import net.quasardb.qdb.ts.Tables;
+
 public class QdbSinkTaskTest {
 
     private static final int NUM_TASKS = 10;

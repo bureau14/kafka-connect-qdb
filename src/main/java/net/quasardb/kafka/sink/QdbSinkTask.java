@@ -21,11 +21,25 @@ import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 
+import net.quasardb.qdb.ts.Writer;
+
 public class QdbSinkTask extends SinkTask {
 
     private static final Logger log = LoggerFactory.getLogger(QdbSinkTask.class);
 
+    private Writer writer;
+
+    /**
+     * No-arg consturctor, required by Kafka Connect
+     */
     public QdbSinkTask() {}
+
+    /**
+     * Constructor. Visible for testing.
+     */
+    public QdbSinkTask(Writer writer) {
+        this.writer = writer;
+    }
 
     @Override
     public String version() {
