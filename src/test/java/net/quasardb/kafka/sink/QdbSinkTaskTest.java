@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import java.io.IOException;
 
 import org.junit.Before;
@@ -20,6 +22,7 @@ import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Tables;
 
+import net.quasardb.kafka.common.ConnectorUtils;
 import net.quasardb.kafka.common.TestUtils;
 
 public class QdbSinkTaskTest {
@@ -43,28 +46,38 @@ public class QdbSinkTaskTest {
     public void setup() throws IOException {
         this.session = TestUtils.createSession();
 
+        this.columns = new Column[NUM_TABLES][];
+        this.rows    = new Row[NUM_TABLES][];
+        this.tables  = new Table[NUM_TABLES];;
+
         for (int i = 0; i < NUM_TABLES; ++i) {
 
             // Generate a column of each value type
-            Column[] cols = Arrays.stream(VALUE_TYPES)
+            this.columns[i] = Arrays.stream(VALUE_TYPES)
                 .map((type) -> {
                         return TestUtils.generateTableColumn(type);
                     })
                 .toArray(Column[]::new);
 
-            Row[] rows = TestUtils.generateTableRows(cols, NUM_ROWS);
-            Table table = TestUtils.createTable(this.session, cols);
-
-            System.out.println("table: " + table.toString());
-
+            this.rows[i] = TestUtils.generateTableRows(this.columns[i], NUM_ROWS);
+            this.tables[i] = TestUtils.createTable(this.session, this.columns[i]);
         }
 
-        task = new QdbSinkTask();
-        props = new HashMap<>();
+        this.task = new QdbSinkTask();
+        this.props = new HashMap<>();
+
+        String topicMap = Arrays.stream(this.tables)
+            .map((table) -> {
+                    // Here we assume kafka topic id == qdb table id
+                    return table.getName() + "=" + table.getName();
+                })
+            .collect(Collectors.joining(","));
+
+        this.props.put(ConnectorUtils.TABLES_CONFIG, topicMap);
     }
 
     @Test
     public void testPutPrimitives() {
-        task.start(props);
+        this.task.start(this.props);
     }
 }

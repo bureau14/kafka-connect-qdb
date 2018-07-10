@@ -15,8 +15,11 @@ import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
 
+import net.quasardb.kafka.common.ConnectorUtils;
 
 public class QdbSinkConnector extends SinkConnector {
+
+    public static final String DEFAULT_CLUSTER_URI = "qdb://127.0.0.1:2836";
 
     private static final Logger log = LoggerFactory.getLogger(QdbSinkConnector.class);
     private Map<String, String> props;
@@ -46,7 +49,17 @@ public class QdbSinkConnector extends SinkConnector {
 
     @Override
     public ConfigDef config() {
-        return new ConfigDef();
+        return new ConfigDef()
+            .define(ConnectorUtils.CLUSTER_URI_CONFIG,
+                    Type.STRING,
+                    DEFAULT_CLUSTER_URI,
+                    Importance.HIGH,
+                    "The Cluster uri to connect to.")
+            .define(ConnectorUtils.TABLES_CONFIG,
+                    Type.LIST,
+                    Importance.HIGH,
+                    "Mapping of Kafka topics to QuasarDB timeseries.")
+            ;
     }
 
     @Override

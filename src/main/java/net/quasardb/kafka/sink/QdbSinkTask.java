@@ -34,13 +34,6 @@ public class QdbSinkTask extends SinkTask {
      */
     public QdbSinkTask() {}
 
-    /**
-     * Constructor. Visible for testing.
-     */
-    public QdbSinkTask(Writer writer) {
-        this.writer = writer;
-    }
-
     @Override
     public String version() {
         return new QdbSinkConnector().version();
@@ -48,6 +41,13 @@ public class QdbSinkTask extends SinkTask {
 
     @Override
     public void start(Map<String, String> props) {
+        if (this.writer != null) {
+            throw new RuntimeException("can only start a task once");
+        }
+
+        Map<String, Object> validatedProps = new QdbSinkConnector().config().parse(props);
+
+        System.out.println("validatedProps = " + validatedProps.toString());
     }
 
     @Override
