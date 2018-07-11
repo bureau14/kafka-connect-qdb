@@ -34,6 +34,7 @@ public class QdbSinkConnector extends SinkConnector {
     @Override
     public void stop() {
         // TODO Nothing implemented at this point, should probably flush
+        log.info("Stopping the QdbSinkConnector.");
     }
 
     @Override

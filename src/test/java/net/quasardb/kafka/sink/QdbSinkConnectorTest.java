@@ -1,12 +1,12 @@
 package net.quasardb.kafka.sink;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
 
 public class QdbSinkConnectorTest {
 
@@ -15,8 +15,8 @@ public class QdbSinkConnectorTest {
     private QdbSinkConnector connector;
     private Map<String, String> props;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void init() {
         connector = new QdbSinkConnector();
         props = new HashMap<>();
     }
