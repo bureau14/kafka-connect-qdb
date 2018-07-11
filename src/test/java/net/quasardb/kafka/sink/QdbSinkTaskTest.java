@@ -8,6 +8,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.Arguments;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +18,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.IntStream;
 import java.nio.ByteBuffer;
 import java.io.IOException;
 
@@ -48,91 +51,24 @@ public class QdbSinkTaskTest {
                                                 Value.Type.DOUBLE,
                                                 Value.Type.BLOB };
 
-    private Session             session;
-    private QdbSinkTask         task;
-    private Map<String, String> props;
+    private static Session             session;
+    private static QdbSinkTask         task;
+    private static Map<String, String> props;
 
-    private Column[][]          columns;
-    private Row[][]             rows;
-    private Table[]             tables;
+    private static Column[][]          columns;
+    private static Row[][]             rows;
+    private static Table[]             tables;
 
     /**
      * Kafka representation of quasardb columns. Maps 1:1 with the fields and
      * field types.
      */
-    private Schema[]            schemas;
+    private static Schema[]            schemas;
 
     /**
      * Kafka representation of quasardb rows. Maps 1:1 with the rows.
      */
-    private SinkRecord[][]      records;
-
-
-    private static SinkRecord rowToRecord(String topic,
-                                          Integer partition,
-                                          Schema schema,
-                                          Row row) {
-        return rowToRecord(topic, partition, schema, row.getValues());
-    }
-
-    private static SinkRecord rowToRecord(String topic,
-                                          Integer partition,
-                                          Schema schema,
-                                          Value[] row) {
-        Struct value = new Struct(schema);
-
-        Field[] fields = schema.fields().toArray(new Field[schema.fields().size()]);
-
-        // In these tests, we're using exactly one kafka schema field for every
-        // field in our rows. These schemas are always the same for all rows, and
-        // we're not testing ommitted fields.
-        assertEquals(fields.length, row.length);
-
-        for(int i = 0; i < fields.length; ++i) {
-            switch (row[i].getType()) {
-            case INT64:
-                value.put(fields[i], row[i].getInt64());
-                break;
-            case DOUBLE:
-                value.put(fields[i], row[i].getDouble());
-                break;
-            case BLOB:
-                ByteBuffer bb = row[i].getBlob();
-                int size = bb.capacity();
-                byte[] buffer = new byte[size];
-                bb.get(buffer, 0, size);
-                bb.rewind();
-                value.put(fields[i], buffer);
-                break;
-            default:
-                throw new DataException("row field type not supported: " + value.toString());
-            }
-        }
-
-        return new SinkRecord(topic, partition, null, null, schema, value, -1);
-    }
-
-    private static Schema columnsToSchema(Column[] columns) {
-        SchemaBuilder builder = SchemaBuilder.struct();
-
-        for (Column c : columns) {
-            switch (c.getType()) {
-            case INT64:
-                builder.field(c.getName(), SchemaBuilder.int64());
-                break;
-            case DOUBLE:
-                builder.field(c.getName(), SchemaBuilder.float64());
-                break;
-            case BLOB:
-                builder.field(c.getName(), SchemaBuilder.bytes());
-                break;
-            default:
-                throw new DataException("column field type not supported: " + c.toString());
-            }
-        }
-
-        return builder.build();
-    }
+    private static SinkRecord[][]      records;
 
     @BeforeEach
     public void setup() throws IOException {
@@ -200,6 +136,107 @@ public class QdbSinkTaskTest {
         }
     }
 
+    /**
+     * Tests that regular rows can be inserted without problem.
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testPutRow(SinkRecord record) {
+        this.task.start(this.props);
+
+        Collection<SinkRecord> records = Collections.singletonList(record);
+        this.task.put(records);
+    }
+
+    /**
+     * Tests that a collection of regular rows can be inserted without problem.
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecords")
+    public void testPutRow(Collection<SinkRecord> records) {
+        this.task.start(this.props);
+        this.task.put(records);
+    }
+
+    /**
+     * Utility function to convert a QuasarDB row to a Kafka record.
+     */
+    private static SinkRecord rowToRecord(String topic,
+                                          Integer partition,
+                                          Schema schema,
+                                          Row row) {
+        return rowToRecord(topic, partition, schema, row.getValues());
+    }
+
+    /**
+     * Utility function to convert a QuasarDB row to a Kafka record.
+     */
+    private static SinkRecord rowToRecord(String topic,
+                                          Integer partition,
+                                          Schema schema,
+                                          Value[] row) {
+        Struct value = new Struct(schema);
+
+        Field[] fields = schema.fields().toArray(new Field[schema.fields().size()]);
+
+        // In these tests, we're using exactly one kafka schema field for every
+        // field in our rows. These schemas are always the same for all rows, and
+        // we're not testing ommitted fields.
+        assertEquals(fields.length, row.length);
+
+        for(int i = 0; i < fields.length; ++i) {
+            switch (row[i].getType()) {
+            case INT64:
+                value.put(fields[i], row[i].getInt64());
+                break;
+            case DOUBLE:
+                value.put(fields[i], row[i].getDouble());
+                break;
+            case BLOB:
+                ByteBuffer bb = row[i].getBlob();
+                int size = bb.capacity();
+                byte[] buffer = new byte[size];
+                bb.get(buffer, 0, size);
+                bb.rewind();
+                value.put(fields[i], buffer);
+                break;
+            default:
+                throw new DataException("row field type not supported: " + value.toString());
+            }
+        }
+
+        return new SinkRecord(topic, partition, null, null, schema, value, -1);
+    }
+
+    /**
+     * Utility function to convert a QuasarDB table definition to a Kafka Schema
+     */
+    private static Schema columnsToSchema(Column[] columns) {
+        SchemaBuilder builder = SchemaBuilder.struct();
+
+        for (Column c : columns) {
+            switch (c.getType()) {
+            case INT64:
+                builder.field(c.getName(), SchemaBuilder.int64());
+                break;
+            case DOUBLE:
+                builder.field(c.getName(), SchemaBuilder.float64());
+                break;
+            case BLOB:
+                builder.field(c.getName(), SchemaBuilder.bytes());
+                break;
+            default:
+                throw new DataException("column field type not supported: " + c.toString());
+            }
+        }
+
+        return builder.build();
+    }
+
+
+    /**
+     * Parameter provider for random schemas
+     */
     static Stream<Arguments> randomSchemaWithValue() {
         return Stream.of(Arguments.of(null, null),
                          Arguments.of(SchemaBuilder.int8(),    (byte)8),
@@ -210,5 +247,36 @@ public class QdbSinkTaskTest {
                          Arguments.of(SchemaBuilder.float64(), (double)64.0),
                          Arguments.of(SchemaBuilder.bool(),    true),
                          Arguments.of(SchemaBuilder.string(), "hi, dave"));
+    }
+
+    /**
+     * Parameter provider for all rows, grouped per table. Emits exactly
+     * NUM_ROWS rows per entry.
+     */
+    static Stream<Arguments> randomRecords() {
+        return IntStream.range(0, records.length)
+            .mapToObj((i) -> {
+                    return Arguments.of(Arrays.asList(records[i]));
+                });
+    }
+
+    /**
+     * Parameter provider for single row. Emits a max of 10 rows per table.
+     */
+    static Stream<Arguments> randomRecord() {
+        final int MAX_ROWS    = 10;
+
+        return IntStream.range(0, Math.min(MAX_ROWS, records.length))
+            .mapToObj((i) -> {
+                    return Arguments.of(records[i]);
+                })
+            .flatMap((args) -> {
+                    SinkRecord[] r = (SinkRecord[])args.get();
+                    return IntStream.range(0, Math.min(MAX_ROWS, r.length))
+                        .mapToObj((j) ->
+                                  {
+                                      return Arguments.of(r[j]);
+                                  });
+                });
     }
 }
