@@ -16,9 +16,10 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import java.nio.ByteBuffer;
 import java.io.IOException;
 
+import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -45,53 +46,92 @@ public class QdbSinkTaskTest {
     private static final int    NUM_ROWS    = 1000;
     private static Value.Type[] VALUE_TYPES = { Value.Type.INT64,
                                                 Value.Type.DOUBLE,
-                                                Value.Type.TIMESTAMP,
                                                 Value.Type.BLOB };
 
     private Session             session;
     private QdbSinkTask         task;
     private Map<String, String> props;
+
     private Column[][]          columns;
     private Row[][]             rows;
     private Table[]             tables;
 
-    private static SinkRecord[] rowToRecords(String topic,
-                                             Integer partition,
-                                             Column[] columns,
-                                             Row row) {
-        return rowToRecords(topic, partition, columns, row.getValues());
+    /**
+     * Kafka representation of quasardb columns. Maps 1:1 with the fields and
+     * field types.
+     */
+    private Schema[]            schemas;
+
+    /**
+     * Kafka representation of quasardb rows. Maps 1:1 with the rows.
+     */
+    private SinkRecord[][]      records;
+
+
+    private static SinkRecord rowToRecord(String topic,
+                                          Integer partition,
+                                          Schema schema,
+                                          Row row) {
+        return rowToRecord(topic, partition, schema, row.getValues());
     }
 
-    private static SinkRecord[] rowToRecords(String topic,
-                                             Integer partition,
-                                             Column[] columns,
-                                             Value[] row) {
-        assertEquals(row.length, columns.length);
+    private static SinkRecord rowToRecord(String topic,
+                                          Integer partition,
+                                          Schema schema,
+                                          Value[] row) {
+        Struct value = new Struct(schema);
 
-        SinkRecord[] records = new SinkRecord[columns.length];
-        for (int i = 0; i < columns.length; ++i) {
-            records[i] = columnToRecord(topic, partition, columns[i], row[i]);
+        Field[] fields = schema.fields().toArray(new Field[schema.fields().size()]);
+
+        // In these tests, we're using exactly one kafka schema field for every
+        // field in our rows. These schemas are always the same for all rows, and
+        // we're not testing ommitted fields.
+        assertEquals(fields.length, row.length);
+
+        for(int i = 0; i < fields.length; ++i) {
+            switch (row[i].getType()) {
+            case INT64:
+                value.put(fields[i], row[i].getInt64());
+                break;
+            case DOUBLE:
+                value.put(fields[i], row[i].getDouble());
+                break;
+            case BLOB:
+                ByteBuffer bb = row[i].getBlob();
+                int size = bb.capacity();
+                byte[] buffer = new byte[size];
+                bb.get(buffer, 0, size);
+                bb.rewind();
+                value.put(fields[i], buffer);
+                break;
+            default:
+                throw new DataException("row field type not supported: " + value.toString());
+            }
         }
 
-        return records;
+        return new SinkRecord(topic, partition, null, null, schema, value, -1);
     }
 
-    private static SinkRecord columnToRecord(String topic,
-                                             Integer partition,
-                                             Column column,
-                                             Value v) {
-        switch (v.getType()) {
-        case INT64:
-            break;
-        case DOUBLE:
-            break;
-        case TIMESTAMP:
-            break;
-        case BLOB:
-            break;
+    private static Schema columnsToSchema(Column[] columns) {
+        SchemaBuilder builder = SchemaBuilder.struct();
+
+        for (Column c : columns) {
+            switch (c.getType()) {
+            case INT64:
+                builder.field(c.getName(), SchemaBuilder.int64());
+                break;
+            case DOUBLE:
+                builder.field(c.getName(), SchemaBuilder.float64());
+                break;
+            case BLOB:
+                builder.field(c.getName(), SchemaBuilder.bytes());
+                break;
+            default:
+                throw new DataException("column field type not supported: " + c.toString());
+            }
         }
 
-        return null;
+        return builder.build();
     }
 
     @BeforeEach
@@ -101,6 +141,8 @@ public class QdbSinkTaskTest {
         this.columns = new Column[NUM_TABLES][];
         this.rows    = new Row[NUM_TABLES][];
         this.tables  = new Table[NUM_TABLES];
+        this.schemas = new Schema[NUM_TABLES];
+        this.records = new SinkRecord[NUM_TABLES][];
 
         for (int i = 0; i < NUM_TABLES; ++i) {
 
@@ -110,9 +152,20 @@ public class QdbSinkTaskTest {
                         return TestUtils.generateTableColumn(type);
                     })
                 .toArray(Column[]::new);
-
             this.rows[i] = TestUtils.generateTableRows(this.columns[i], NUM_ROWS);
             this.tables[i] = TestUtils.createTable(this.session, this.columns[i]);
+
+            // Calculate/determine Kafka Connect representations of the schemas
+            this.schemas[i] = columnsToSchema(this.columns[i]);
+
+            final Schema schema = this.schemas[i];
+            final String topic = this.tables[i].getName();
+
+            this.records[i] = Arrays.stream(this.rows[i])
+                .map((row) -> {
+                        return rowToRecord(topic, 0, schema, row);
+                    })
+                .toArray(SinkRecord[]::new);
         }
 
         this.task = new QdbSinkTask();
@@ -130,17 +183,17 @@ public class QdbSinkTaskTest {
     }
 
     /**
-     * Tests that an exception is thrown when the schema of the key is not a string.
+     * Tests that an exception is thrown when the schema of the value is not a struct.
      */
     @ParameterizedTest
     @MethodSource("randomSchemaWithValue")
-    public void testPutKeyNull(Schema schema, Object value) {
+    public void testPutValuePrimitives(Schema schema, Object value) {
         this.task.start(this.props);
 
         List<SinkRecord> records = new ArrayList<SinkRecord>();
-        records.add(new SinkRecord(null, -1, schema, value, null, null, -1));
+        records.add(new SinkRecord(null, -1, null, null, schema, value, -1));
 
-        if (schema != null && schema.type() == Schema.Type.STRING) {
+        if (schema != null && schema.type() == Schema.Type.STRUCT) {
             this.task.put(records);
         } else {
             assertThrows(DataException.class, () -> this.task.put(records));

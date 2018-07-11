@@ -70,9 +70,9 @@ public class QdbSinkTask extends SinkTask {
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
         for (SinkRecord s : sinkRecords) {
-            if (s.keySchema() == null ||
-                s.keySchema().type() != Schema.Type.STRING) {
-                throw new DataException("Only String keys are supported, got: " + s.keySchema());
+            if (s.valueSchema() == null ||
+                s.valueSchema().type() != Schema.Type.STRUCT) {
+                throw new DataException("Only Struct values are supported, got: " + s.valueSchema());
             }
         }
 
