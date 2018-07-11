@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Schema.Type;
@@ -23,6 +24,9 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.apache.kafka.connect.errors.DataException;
 
 import net.quasardb.qdb.Session;
+import net.quasardb.qdb.ts.Table;
+import net.quasardb.qdb.ts.Tables;
+import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Writer;
 import net.quasardb.kafka.common.ConnectorUtils;
 
@@ -32,6 +36,8 @@ public class QdbSinkTask extends SinkTask {
 
     private Session session;
     private Writer writer;
+
+    private Map<String, String> topicToTable;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
@@ -53,7 +59,17 @@ public class QdbSinkTask extends SinkTask {
         this.session =
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
-        log.info("Started QdbSinkTask");
+        this.topicToTable = ConnectorUtils.parseTablesConfig((Collection<String>)validatedProps.get(ConnectorUtils.TABLES_CONFIG));
+
+        Tables tables = new Tables();
+        for (Map.Entry<String, String> entry : this.topicToTable.entrySet()) {
+            log.debug("Preparing table mapping " + entry.getKey() + " -> " + entry.getValue());
+            tables.add(this.session, entry.getValue());
+        }
+
+        this.writer = Tables.autoFlushWriter(this.session, tables);
+
+        log.info("Started QdbSinkTask, table mapping: " + this.topicToTable);
     }
 
     @Override
@@ -74,13 +90,20 @@ public class QdbSinkTask extends SinkTask {
                 s.valueSchema().type() != Schema.Type.STRUCT) {
                 throw new DataException("Only Struct values are supported, got: " + s.valueSchema());
             }
-        }
 
+            //Table t = tableFromRecord(this.session, this.topicToTable, s);
+            Value[] row = recordToValue((Struct)s.value());
+        }
     }
 
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> partitionOffsets) {
         // TODO implement
     }
+
+    private static Value[] recordToValue(Struct record) {
+        return null;
+    }
+
 
 }

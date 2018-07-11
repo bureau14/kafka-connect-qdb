@@ -92,14 +92,14 @@ public class QdbSinkTaskTest {
             this.tables[i] = TestUtils.createTable(this.session, this.columns[i]);
 
             // Calculate/determine Kafka Connect representations of the schemas
-            this.schemas[i] = columnsToSchema(this.columns[i]);
+            this.schemas[i] = TestUtils.columnsToSchema(this.columns[i]);
 
             final Schema schema = this.schemas[i];
             final String topic = this.tables[i].getName();
 
             this.records[i] = Arrays.stream(this.rows[i])
                 .map((row) -> {
-                        return rowToRecord(topic, 0, schema, row);
+                        return TestUtils.rowToRecord(topic, 0, schema, row);
                     })
                 .toArray(SinkRecord[]::new);
         }
@@ -156,81 +156,6 @@ public class QdbSinkTaskTest {
     public void testPutRow(Collection<SinkRecord> records) {
         this.task.start(this.props);
         this.task.put(records);
-    }
-
-    /**
-     * Utility function to convert a QuasarDB row to a Kafka record.
-     */
-    private static SinkRecord rowToRecord(String topic,
-                                          Integer partition,
-                                          Schema schema,
-                                          Row row) {
-        return rowToRecord(topic, partition, schema, row.getValues());
-    }
-
-    /**
-     * Utility function to convert a QuasarDB row to a Kafka record.
-     */
-    private static SinkRecord rowToRecord(String topic,
-                                          Integer partition,
-                                          Schema schema,
-                                          Value[] row) {
-        Struct value = new Struct(schema);
-
-        Field[] fields = schema.fields().toArray(new Field[schema.fields().size()]);
-
-        // In these tests, we're using exactly one kafka schema field for every
-        // field in our rows. These schemas are always the same for all rows, and
-        // we're not testing ommitted fields.
-        assertEquals(fields.length, row.length);
-
-        for(int i = 0; i < fields.length; ++i) {
-            switch (row[i].getType()) {
-            case INT64:
-                value.put(fields[i], row[i].getInt64());
-                break;
-            case DOUBLE:
-                value.put(fields[i], row[i].getDouble());
-                break;
-            case BLOB:
-                ByteBuffer bb = row[i].getBlob();
-                int size = bb.capacity();
-                byte[] buffer = new byte[size];
-                bb.get(buffer, 0, size);
-                bb.rewind();
-                value.put(fields[i], buffer);
-                break;
-            default:
-                throw new DataException("row field type not supported: " + value.toString());
-            }
-        }
-
-        return new SinkRecord(topic, partition, null, null, schema, value, -1);
-    }
-
-    /**
-     * Utility function to convert a QuasarDB table definition to a Kafka Schema
-     */
-    private static Schema columnsToSchema(Column[] columns) {
-        SchemaBuilder builder = SchemaBuilder.struct();
-
-        for (Column c : columns) {
-            switch (c.getType()) {
-            case INT64:
-                builder.field(c.getName(), SchemaBuilder.int64());
-                break;
-            case DOUBLE:
-                builder.field(c.getName(), SchemaBuilder.float64());
-                break;
-            case BLOB:
-                builder.field(c.getName(), SchemaBuilder.bytes());
-                break;
-            default:
-                throw new DataException("column field type not supported: " + c.toString());
-            }
-        }
-
-        return builder.build();
     }
 
 
