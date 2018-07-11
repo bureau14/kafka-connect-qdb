@@ -37,7 +37,42 @@ public class QdbSinkTask extends SinkTask {
     private Session session;
     private Writer writer;
 
-    private Map<String, String> topicToTable;
+    private Map<String, TableInfo> topicToTable;
+
+    private class TableInfo {
+        private Table table;
+        private int offset;
+
+        public TableInfo(Table table) {
+            this.table = table;
+            this.offset = -1;
+        }
+
+        public TableInfo(Table table, int offset) {
+            this.table = table;
+            this.offset = offset;
+        }
+
+        public boolean hasOffset() {
+            return this.offset != -1;
+        }
+
+        public void setOffset(int offset) {
+            this.offset = offset;
+        }
+
+        public int getOffset() {
+            return this.offset;
+        }
+
+        public Table getTable() {
+            return this.table;
+        }
+
+        public String toString() {
+            return "TableInfo (table: " + this.table.toString() + ", offset: " + this.offset + ")";
+        }
+    };
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
@@ -59,12 +94,21 @@ public class QdbSinkTask extends SinkTask {
         this.session =
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
-        this.topicToTable = ConnectorUtils.parseTablesConfig((Collection<String>)validatedProps.get(ConnectorUtils.TABLES_CONFIG));
+        /**
+         * We need to resolve some relevant metadata based on the configuration. We
+         * need to look up all the tables, create a Writer out of them, and once we have
+         * the writer, we can pre-cache all the tables' offsets within the bulk write.
+         */
+        Map<String, String> tableConfig =  ConnectorUtils.parseTablesConfig((Collection<String>)validatedProps.get(ConnectorUtils.TABLES_CONFIG));
+
 
         Tables tables = new Tables();
-        for (Map.Entry<String, String> entry : this.topicToTable.entrySet()) {
-            log.debug("Preparing table mapping " + entry.getKey() + " -> " + entry.getValue());
-            tables.add(this.session, entry.getValue());
+        this.topicToTable = new HashMap<String, TableInfo>();
+
+        for (Map.Entry<String, String> entry : tableConfig.entrySet()) {
+            Table table = new Table(this.session, entry.getValue());
+            tables.add(table);
+            this.topicToTable.put(entry.getKey(), new TableInfo(table));
         }
 
         this.writer = Tables.autoFlushWriter(this.session, tables);
