@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +15,7 @@ import java.util.Arrays;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import java.io.IOException;
 
@@ -128,43 +132,30 @@ public class QdbSinkTaskTest {
     /**
      * Tests that an exception is thrown when the schema of the key is not a string.
      */
-    @Test
-    public void testPutKeyNull() {
+    @ParameterizedTest
+    @MethodSource("randomSchemaWithValue")
+    public void testPutKeyNull(Schema schema, Object value) {
         this.task.start(this.props);
 
-        SinkRecord[] records = new SinkRecord[] {
-            new SinkRecord(null, -1, null, null, SchemaBuilder.int8(), (byte) 5, -1),
-            new SinkRecord(null, -1, SchemaBuilder.int8(), (byte) 5, SchemaBuilder.int8(), (byte) 5, -1)};
+        List<SinkRecord> records = new ArrayList<SinkRecord>();
+        records.add(new SinkRecord(null, -1, schema, value, null, null, -1));
 
-        for (SinkRecord record : records) {
-            assertThrows(DataException.class, () -> {
-                    List<SinkRecord> xs = new ArrayList<SinkRecord>();
-                    xs.add(record);
-                    this.task.put(xs);
-                });
+        if (schema != null && schema.type() == Schema.Type.STRING) {
+            this.task.put(records);
+        } else {
+            assertThrows(DataException.class, () -> this.task.put(records));
         }
-
-        //this.task.put(records);
     }
 
-    @Test
-    public void testPutRow() {
-        this.task.start(this.props);
-
-        for (int i = 0; i < NUM_TABLES; ++i) {
-            String topic = this.tables[i].getName();
-
-            SinkRecord[] records =
-                QdbSinkTaskTest.rowToRecords(topic,
-                                             0,
-                                             this.columns[i],
-                                             this.rows[i][0]);
-
-            assertEquals(records.length, this.columns[i].length);
-        }
-
-        //SinkRecord recordString =
-        //SinkRecord.newRecord(this.tables()
-        //new SinkRecord(null, -1, null, null, SchemaBuilder.string(), "Test String", -1);
+    static Stream<Arguments> randomSchemaWithValue() {
+        return Stream.of(Arguments.of(null, null),
+                         Arguments.of(SchemaBuilder.int8(),    (byte)8),
+                         Arguments.of(SchemaBuilder.int16(),   (short)16),
+                         Arguments.of(SchemaBuilder.int32(),   (int)32),
+                         Arguments.of(SchemaBuilder.int64(),   (long)64),
+                         Arguments.of(SchemaBuilder.float32(), (float)32.0),
+                         Arguments.of(SchemaBuilder.float64(), (double)64.0),
+                         Arguments.of(SchemaBuilder.bool(),    true),
+                         Arguments.of(SchemaBuilder.string(), "hi, dave"));
     }
 }
