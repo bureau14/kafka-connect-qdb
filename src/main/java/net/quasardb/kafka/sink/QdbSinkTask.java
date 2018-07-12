@@ -179,11 +179,7 @@ public class QdbSinkTask extends SinkTask {
      */
     private static TableInfo tableFromRecord(Map<String, TableInfo> topicToTable, SinkRecord record) throws DataException {
 
-        log.debug("1 tableFromRecord, topicToTable keys = " + topicToTable.keySet().toString());
-
         TableInfo t = topicToTable.get(record.topic());
-
-        log.debug("tableFromRecord, t = " + t);
 
         if (t == null) {
             log.error("Topic for record not found: " + record.topic());

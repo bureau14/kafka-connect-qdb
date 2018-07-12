@@ -75,8 +75,6 @@ public class QdbSinkTaskTest {
         public static Fixture of(Session session) throws IOException {
             Fixture out = new Fixture();
 
-            System.out.println("session: " + session);
-
             for (int i = 0; i < NUM_TABLES; ++i) {
 
                 // Generate a column of each value type
@@ -145,25 +143,11 @@ public class QdbSinkTaskTest {
     @ParameterizedTest
     @MethodSource("randomRecord")
     public void testPutRow(Fixture fixture, SinkRecord record) {
-
-        System.out.println("-------");
-        System.out.println("testing!!!!, props = " + fixture.props.toString() + ", record.topic = " + record.topic());
-
         this.task.start(fixture.props);
 
-        System.out.println("started task!!");
-
-
         Collection<SinkRecord> records = Collections.singletonList(record);
-
-        System.out.println("putting records..");
-
         this.task.put(records);
-
-        System.out.println("test done!!");
-
         this.task.stop();
-        System.out.println("========");
     }
 
     /**
