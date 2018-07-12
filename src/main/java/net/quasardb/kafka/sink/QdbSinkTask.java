@@ -39,7 +39,7 @@ public class QdbSinkTask extends SinkTask {
 
     private Map<String, TableInfo> topicToTable;
 
-    private class TableInfo {
+    static private class TableInfo {
         private Table table;
         private int offset;
 
@@ -94,37 +94,57 @@ public class QdbSinkTask extends SinkTask {
         this.session =
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
-        /**
-         * We need to resolve some relevant metadata based on the configuration. We
-         * need to look up all the tables, create a Writer out of them, and once we have
-         * the writer, we can pre-cache all the tables' offsets within the bulk write.
-         */
-        Map<String, String> tableConfig =  ConnectorUtils.parseTablesConfig((Collection<String>)validatedProps.get(ConnectorUtils.TABLES_CONFIG));
+        this.topicToTable =
+           this.resolveTableInfo(this.session,
+                                 (Collection<String>)validatedProps.get(ConnectorUtils.TABLES_CONFIG));
 
-
-        Tables tables = new Tables();
-        this.topicToTable = new HashMap<String, TableInfo>();
-
-        for (Map.Entry<String, String> entry : tableConfig.entrySet()) {
-            Table table = new Table(this.session, entry.getValue());
-            tables.add(table);
-            this.topicToTable.put(entry.getKey(), new TableInfo(table));
-        }
+        Table[] tables =
+            this.topicToTable.entrySet().stream()
+            .map((x) -> {
+                    return x.getValue().getTable();
+                })
+            .toArray(Table[]::new);
 
         this.writer = Tables.autoFlushWriter(this.session, tables);
 
-        log.info("Started QdbSinkTask, table mapping: " + this.topicToTable);
+        log.info("Started QdbSinkTask");
+    }
+
+    /**
+     * Takes a validated table configuration, and resolve the actual Qdb table information
+     * based on it.
+     */
+    static private Map<String, TableInfo> resolveTableInfo(Session session,
+                                                           Collection<String> config) {
+        Map<String, String> parsedConfig = ConnectorUtils.parseTablesConfig(config);
+        Map<String, TableInfo> out = new HashMap<String, TableInfo>();
+
+        for (Map.Entry<String, String> entry : parsedConfig.entrySet()) {
+            Table table = new Table(session, entry.getValue());
+            out.put(entry.getKey(), new TableInfo(table));
+        }
+
+        return out;
     }
 
     @Override
     public void stop() {
         log.info("Stopping QdbSinkTask");
 
-        if (this.session != null) {
-            this.session.close();
+        try {
+            if (this.writer != null) {
+                this.writer.close();
+                this.writer = null;
+            }
+
+            if (this.session != null) {
+                this.session.close();
+                this.session = null;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
-        this.session = null;
     }
 
     @Override
@@ -135,7 +155,7 @@ public class QdbSinkTask extends SinkTask {
                 throw new DataException("Only Struct values are supported, got: " + s.valueSchema());
             }
 
-            //Table t = tableFromRecord(this.session, this.topicToTable, s);
+            TableInfo t = tableFromRecord(this.topicToTable, s);
             Value[] row = recordToValue((Struct)s.value());
         }
     }
@@ -149,5 +169,28 @@ public class QdbSinkTask extends SinkTask {
         return null;
     }
 
+    /**
+     * Looks up the appropriate Table based on a Record. In future version, this can
+     * also contain logic to dynamically resolve a table from a record's struct's field
+     * value.
+     *
+     * @param topicToTable Hardcoded mapping of kafka topic to qdb table.
+     * @param record The Kafka record being processed.
+     */
+    private static TableInfo tableFromRecord(Map<String, TableInfo> topicToTable, SinkRecord record) throws DataException {
 
+        log.debug("1 tableFromRecord, topicToTable keys = " + topicToTable.keySet().toString());
+
+        TableInfo t = topicToTable.get(record.topic());
+
+        log.debug("tableFromRecord, t = " + t);
+
+        if (t == null) {
+            log.error("Topic for record not found: " + record.topic());
+            log.error("If this problem persists, please restart the connector with an " +
+                      "appropriate mapping of this topic to a QuasarDB table.");
+            throw new DataException("Unexpected topic, unable to map to QuasarDB table");
+        }
+        return null;
+    }
 }

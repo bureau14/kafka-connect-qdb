@@ -53,69 +53,72 @@ public class QdbSinkTaskTest {
 
     private static Session             session;
     private static QdbSinkTask         task;
-    private static Map<String, String> props;
 
-    private static Column[][]          columns;
-    private static Row[][]             rows;
-    private static Table[]             tables;
+    private static class Fixture {
+        public Column[][]          columns;
+        public Row[][]             rows;
+        public Table[]             tables;
+        public Schema[]            schemas;
+        public SinkRecord[][]      records;
+        public Map<String, String> props;
 
-    /**
-     * Kafka representation of quasardb columns. Maps 1:1 with the fields and
-     * field types.
-     */
-    private static Schema[]            schemas;
+        public Fixture() {
+            this.columns  = new Column[NUM_TABLES][];
+            this.rows     = new Row[NUM_TABLES][];
+            this.tables   = new Table[NUM_TABLES];
+            this.schemas  = new Schema[NUM_TABLES];
+            this.records  = new SinkRecord[NUM_TABLES][];
 
-    /**
-     * Kafka representation of quasardb rows. Maps 1:1 with the rows.
-     */
-    private static SinkRecord[][]      records;
+            this.props    = new HashMap<String, String>();
+        }
+
+        public static Fixture of(Session session) throws IOException {
+            Fixture out = new Fixture();
+
+            System.out.println("session: " + session);
+
+            for (int i = 0; i < NUM_TABLES; ++i) {
+
+                // Generate a column of each value type
+                out.columns[i] = Arrays.stream(VALUE_TYPES)
+                    .map((type) -> {
+                            return TestUtils.generateTableColumn(type);
+                        })
+                    .toArray(Column[]::new);
+                out.rows[i] = TestUtils.generateTableRows(out.columns[i], NUM_ROWS);
+                out.tables[i] = TestUtils.createTable(session, out.columns[i]);
+
+                // Calculate/determine Kafka Connect representations of the schemas
+                out.schemas[i] = TestUtils.columnsToSchema(out.columns[i]);
+
+                final Schema schema = out.schemas[i];
+                final String topic  = out.tables[i].getName();
+
+                out.records[i] = Arrays.stream(out.rows[i])
+                    .map((row) -> {
+                            return TestUtils.rowToRecord(topic, 0, schema, row);
+                        })
+                    .toArray(SinkRecord[]::new);
+            }
+
+            String topicMap = Arrays.stream(out.tables)
+                .map((table) -> {
+                        // Here we assume kafka topic id == qdb table id
+                        return table.getName() + "=" + table.getName();
+                    })
+                .collect(Collectors.joining(","));
+
+
+            out.props.put(ConnectorUtils.CLUSTER_URI_CONFIG, "qdb://127.0.0.1:28360");
+            out.props.put(ConnectorUtils.TABLES_CONFIG, topicMap);
+
+            return out;
+        }
+    }
 
     @BeforeEach
     public void setup() throws IOException {
-        this.session = TestUtils.createSession();
-
-        this.columns = new Column[NUM_TABLES][];
-        this.rows    = new Row[NUM_TABLES][];
-        this.tables  = new Table[NUM_TABLES];
-        this.schemas = new Schema[NUM_TABLES];
-        this.records = new SinkRecord[NUM_TABLES][];
-
-        for (int i = 0; i < NUM_TABLES; ++i) {
-
-            // Generate a column of each value type
-            this.columns[i] = Arrays.stream(VALUE_TYPES)
-                .map((type) -> {
-                        return TestUtils.generateTableColumn(type);
-                    })
-                .toArray(Column[]::new);
-            this.rows[i] = TestUtils.generateTableRows(this.columns[i], NUM_ROWS);
-            this.tables[i] = TestUtils.createTable(this.session, this.columns[i]);
-
-            // Calculate/determine Kafka Connect representations of the schemas
-            this.schemas[i] = TestUtils.columnsToSchema(this.columns[i]);
-
-            final Schema schema = this.schemas[i];
-            final String topic = this.tables[i].getName();
-
-            this.records[i] = Arrays.stream(this.rows[i])
-                .map((row) -> {
-                        return TestUtils.rowToRecord(topic, 0, schema, row);
-                    })
-                .toArray(SinkRecord[]::new);
-        }
-
         this.task = new QdbSinkTask();
-        this.props = new HashMap<>();
-
-        String topicMap = Arrays.stream(this.tables)
-            .map((table) -> {
-                    // Here we assume kafka topic id == qdb table id
-                    return table.getName() + "=" + table.getName();
-                })
-            .collect(Collectors.joining(","));
-
-        this.props.put(ConnectorUtils.CLUSTER_URI_CONFIG, "qdb://127.0.0.1:28360");
-        this.props.put(ConnectorUtils.TABLES_CONFIG, topicMap);
     }
 
     /**
@@ -123,8 +126,8 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomSchemaWithValue")
-    public void testPutValuePrimitives(Schema schema, Object value) {
-        this.task.start(this.props);
+    public void testPutValuePrimitives(Fixture state, Schema schema, Object value) {
+        this.task.start(state.props);
 
         List<SinkRecord> records = new ArrayList<SinkRecord>();
         records.add(new SinkRecord(null, -1, null, null, schema, value, -1));
@@ -141,11 +144,26 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testPutRow(SinkRecord record) {
-        this.task.start(this.props);
+    public void testPutRow(Fixture fixture, SinkRecord record) {
+
+        System.out.println("-------");
+        System.out.println("testing!!!!, props = " + fixture.props.toString() + ", record.topic = " + record.topic());
+
+        this.task.start(fixture.props);
+
+        System.out.println("started task!!");
+
 
         Collection<SinkRecord> records = Collections.singletonList(record);
+
+        System.out.println("putting records..");
+
         this.task.put(records);
+
+        System.out.println("test done!!");
+
+        this.task.stop();
+        System.out.println("========");
     }
 
     /**
@@ -153,8 +171,8 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecords")
-    public void testPutRow(Collection<SinkRecord> records) {
-        this.task.start(this.props);
+    public void testPutRow(Fixture fixture, Collection<SinkRecord> records) {
+        this.task.start(fixture.props);
         this.task.put(records);
     }
 
@@ -162,45 +180,50 @@ public class QdbSinkTaskTest {
     /**
      * Parameter provider for random schemas
      */
-    static Stream<Arguments> randomSchemaWithValue() {
-        return Stream.of(Arguments.of(null, null),
-                         Arguments.of(SchemaBuilder.int8(),    (byte)8),
-                         Arguments.of(SchemaBuilder.int16(),   (short)16),
-                         Arguments.of(SchemaBuilder.int32(),   (int)32),
-                         Arguments.of(SchemaBuilder.int64(),   (long)64),
-                         Arguments.of(SchemaBuilder.float32(), (float)32.0),
-                         Arguments.of(SchemaBuilder.float64(), (double)64.0),
-                         Arguments.of(SchemaBuilder.bool(),    true),
-                         Arguments.of(SchemaBuilder.string(), "hi, dave"));
+    static Stream<Arguments> randomSchemaWithValue() throws IOException {
+        Fixture fixture       = Fixture.of(TestUtils.createSession());
+
+        return Stream.of(Arguments.of(fixture, null, null),
+                         Arguments.of(fixture, SchemaBuilder.int8(),    (byte)8),
+                         Arguments.of(fixture, SchemaBuilder.int16(),   (short)16),
+                         Arguments.of(fixture, SchemaBuilder.int32(),   (int)32),
+                         Arguments.of(fixture, SchemaBuilder.int64(),   (long)64),
+                         Arguments.of(fixture, SchemaBuilder.float32(), (float)32.0),
+                         Arguments.of(fixture, SchemaBuilder.float64(), (double)64.0),
+                         Arguments.of(fixture, SchemaBuilder.bool(),    true),
+                         Arguments.of(fixture, SchemaBuilder.string(), "hi, dave"));
     }
 
     /**
      * Parameter provider for all rows, grouped per table. Emits exactly
      * NUM_ROWS rows per entry.
      */
-    static Stream<Arguments> randomRecords() {
-        return IntStream.range(0, records.length)
+    static Stream<Arguments> randomRecords() throws IOException {
+        Fixture fixture       = Fixture.of(TestUtils.createSession());
+
+        return IntStream.range(0, fixture.records.length)
             .mapToObj((i) -> {
-                    return Arguments.of(Arrays.asList(records[i]));
+                    return Arguments.of(fixture, Arrays.asList(fixture.records[i]));
                 });
     }
 
     /**
      * Parameter provider for single row. Emits a max of 10 rows per table.
      */
-    static Stream<Arguments> randomRecord() {
+    static Stream<Arguments> randomRecord() throws IOException {
         final int MAX_ROWS    = 10;
+        Fixture fixture       = Fixture.of(TestUtils.createSession());
 
-        return IntStream.range(0, Math.min(MAX_ROWS, records.length))
+        return IntStream.range(0, Math.min(MAX_ROWS, fixture.records.length))
             .mapToObj((i) -> {
-                    return Arguments.of(records[i]);
+                    return Arguments.of(fixture.records[i]);
                 })
             .flatMap((args) -> {
                     SinkRecord[] r = (SinkRecord[])args.get();
                     return IntStream.range(0, Math.min(MAX_ROWS, r.length))
                         .mapToObj((j) ->
                                   {
-                                      return Arguments.of(r[j]);
+                                      return Arguments.of(fixture, r[j]);
                                   });
                 });
     }
