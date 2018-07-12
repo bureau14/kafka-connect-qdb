@@ -24,8 +24,10 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.apache.kafka.connect.errors.DataException;
 
 import net.quasardb.qdb.Session;
+import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Tables;
+import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Writer;
 import net.quasardb.kafka.common.ConnectorUtils;
@@ -156,17 +158,61 @@ public class QdbSinkTask extends SinkTask {
             }
 
             TableInfo t = tableFromRecord(this.topicToTable, s);
-            Value[] row = recordToValue((Struct)s.value());
+
+            if (t.hasOffset() == false) {
+                t.setOffset(this.writer.tableIndexByName(t.getTable().getName()));
+            }
+
+            Value[] row = recordToValue(t.getTable().getColumns(), (Struct)s.value());
+
+            try {
+                this.writer.append(t.getOffset(), Timespec.now(), row);
+            } catch (Exception e) {
+                log.error("Unable to write record: " + e.getMessage());
+                log.error("Record: " + s.toString());
+                throw new RuntimeException(e);
+            }
         }
     }
 
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> partitionOffsets) {
-        // TODO implement
+        try {
+            if (this.writer != null) {
+                log.info("Flush request received, flushing writer..");
+                this.writer.flush();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private static Value[] recordToValue(Struct record) {
-        return null;
+    private static Value[] recordToValue(Column[] columns, Struct record) {
+        Value[] out = new Value[columns.length];
+
+        for (int i = 0; i < columns.length; ++i) {
+            Object val = record.get(columns[i].getName());
+
+            if (val == null) {
+                out[i] = Value.createNull();
+            }
+
+            switch (columns[i].getType()) {
+            case DOUBLE:
+                out[i] = Value.createDouble((Double)val);
+                break;
+            case INT64:
+                out[i] = Value.createInt64((Long)val);
+                break;
+            case BLOB:
+                out[i] = Value.createSafeBlob((byte[])val);
+                break;
+            default:
+                throw new DataException("Unsupported column type: " + columns[i].toString());
+            };
+        }
+
+        return out;
     }
 
     /**
@@ -187,6 +233,7 @@ public class QdbSinkTask extends SinkTask {
                       "appropriate mapping of this topic to a QuasarDB table.");
             throw new DataException("Unexpected topic, unable to map to QuasarDB table");
         }
-        return null;
+
+        return t;
     }
 }
