@@ -29,7 +29,7 @@ mvn package -DskipTests \
     && cd ../qdb-kafka-connector
 
 echo "Installing Java"
-mvn install:install-file -f pom-java.xml
+mvn install:install-file -f pom-java.xml -DpomFile=pom-java.xml
 
 cd ../qdb-kafka-connector
 mvn test
