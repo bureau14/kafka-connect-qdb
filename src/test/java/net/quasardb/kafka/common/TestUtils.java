@@ -6,13 +6,13 @@ import java.util.stream.Stream;
 import java.util.function.Supplier;
 import java.io.IOException;
 
+import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.errors.DataException;
-
 import net.quasardb.qdb.Session;
 
 import net.quasardb.qdb.ts.Column;
@@ -154,7 +154,6 @@ public class TestUtils {
         return new String("a") + UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-
     /**
      * Utility function to convert a QuasarDB row to a Kafka record.
      */
@@ -162,7 +161,7 @@ public class TestUtils {
                                          Integer partition,
                                          Schema schema,
                                          Row row) {
-        return rowToRecord(topic, partition, schema, row.getValues());
+        return rowToRecord(topic, partition, schema, row.getTimestamp(), row.getValues());
     }
 
     /**
@@ -171,6 +170,7 @@ public class TestUtils {
     public static SinkRecord rowToRecord(String topic,
                                          Integer partition,
                                          Schema schema,
+                                         Timespec time,
                                          Value[] row) {
         Struct value = new Struct(schema);
 
@@ -200,7 +200,11 @@ public class TestUtils {
             }
         }
 
-        return new SinkRecord(topic, partition, null, null, schema, value, -1);
+        return new SinkRecord(topic, partition,
+                              null, null,    // key is unused
+                              schema, value,
+                              -1,            // kafkaOffset
+                              time.toEpochMillis(), TimestampType.CREATE_TIME);
     }
 
     /**

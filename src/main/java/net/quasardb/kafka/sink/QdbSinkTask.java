@@ -107,7 +107,7 @@ public class QdbSinkTask extends SinkTask {
                 })
             .toArray(Table[]::new);
 
-        this.writer = Tables.autoFlushWriter(this.session, tables);
+        this.writer = Tables.writer(this.session, tables);
 
         log.info("Started QdbSinkTask");
     }
@@ -166,7 +166,10 @@ public class QdbSinkTask extends SinkTask {
             Value[] row = recordToValue(t.getTable().getColumns(), (Struct)s.value());
 
             try {
-                this.writer.append(t.getOffset(), Timespec.now(), row);
+                Timespec ts = (s.timestamp() == null
+                               ? Timespec.now()
+                               : new Timespec(s.timestamp()));
+                this.writer.append(t.getOffset(), ts, row);
             } catch (Exception e) {
                 log.error("Unable to write record: " + e.getMessage());
                 log.error("Record: " + s.toString());

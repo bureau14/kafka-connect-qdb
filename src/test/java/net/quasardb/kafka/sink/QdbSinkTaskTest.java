@@ -28,11 +28,11 @@ import org.apache.kafka.connect.sink.SinkRecord;
 
 import org.apache.kafka.connect.errors.DataException;
 
-import net.quasardb.qdb.Session;
-
 import net.quasardb.qdb.ts.Column;
+import net.quasardb.qdb.ts.Reader;
 import net.quasardb.qdb.ts.Row;
 import net.quasardb.qdb.ts.Value;
+import net.quasardb.qdb.ts.TimeRange;
 import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Tables;
@@ -44,8 +44,7 @@ import net.quasardb.kafka.common.Fixture;
 public class QdbSinkTaskTest {
 
     private static final int    NUM_TASKS   = 10;
-    private static Session             session;
-    private static QdbSinkTask         task;
+    private static QdbSinkTask  task;
 
     @BeforeEach
     public void setup() {
@@ -78,8 +77,7 @@ public class QdbSinkTaskTest {
     public void testPutRow(Fixture fixture, SinkRecord record) {
         this.task.start(fixture.props);
 
-        Collection<SinkRecord> records = Collections.singletonList(record);
-        this.task.put(records);
+        this.task.put(Collections.singletonList(record));
         this.task.stop();
     }
 
@@ -88,11 +86,30 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecords")
-    public void testPutRow(Fixture fixture, Collection<SinkRecord> records) {
+    public void testPutRows(Fixture fixture, Collection<SinkRecord> records) {
         this.task.start(fixture.props);
         this.task.put(records);
     }
 
+    /**
+     * Tests that rows are visible after flushing.
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testRowsVisibleAfterFlush(Fixture fixture, SinkRecord record) {
+        this.task.start(fixture.props);
+        this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap<>());
+
+        String tableName = record.topic();
+        TimeRange[] ranges = { new TimeRange(Timespec.now().minusSeconds(60),
+                                             Timespec.now()) };
+
+        System.out.println("tablename = " + tableName);
+        System.out.println("ranges = " + Arrays.toString(ranges));
+
+        Reader r = Table.reader(TestUtils.createSession(), tableName, ranges);
+    }
 
     /**
      * Parameter provider for random schemas
