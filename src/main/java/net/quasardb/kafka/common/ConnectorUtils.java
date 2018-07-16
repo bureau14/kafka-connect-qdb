@@ -8,13 +8,13 @@ import org.apache.kafka.connect.errors.DataException;
 public class ConnectorUtils {
 
     public static final String CLUSTER_URI_CONFIG = "qdb.cluster";
-    public static final String TABLES_CONFIG = "qdb.topic_tables";
+    public static final String TABLE_FROM_TOPIC_CONFIG = "qdb.table_from_topic";
 
     /**
      * Parses table input config and emits a mapping of Kafka topics to
      * QuasarDB tables.
      */
-    public static Map<String, String> parseTablesConfig(Collection<String> xs) {
+    public static Map<String, String> parseTableFromTopic(Collection<String> xs) {
         Map<String, String> out = new HashMap();
 
         for (String x : xs) {

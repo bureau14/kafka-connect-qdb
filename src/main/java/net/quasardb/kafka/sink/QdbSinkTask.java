@@ -15,9 +15,6 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.Schema.Type;
-import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -30,7 +27,12 @@ import net.quasardb.qdb.ts.Tables;
 import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Writer;
+
 import net.quasardb.kafka.common.ConnectorUtils;
+import net.quasardb.kafka.common.InputRecordConverter;
+import net.quasardb.kafka.common.StructInputRecordConverter;
+import net.quasardb.kafka.common.TableInfo;
+import net.quasardb.kafka.common.TableRegistry;
 
 public class QdbSinkTask extends SinkTask {
 
@@ -39,47 +41,17 @@ public class QdbSinkTask extends SinkTask {
     private Session session;
     private Writer writer;
 
-    private Map<String, TableInfo> topicToTable;
-
-    static private class TableInfo {
-        private Table table;
-        private int offset;
-
-        public TableInfo(Table table) {
-            this.table = table;
-            this.offset = -1;
-        }
-
-        public TableInfo(Table table, int offset) {
-            this.table = table;
-            this.offset = offset;
-        }
-
-        public boolean hasOffset() {
-            return this.offset != -1;
-        }
-
-        public void setOffset(int offset) {
-            this.offset = offset;
-        }
-
-        public int getOffset() {
-            return this.offset;
-        }
-
-        public Table getTable() {
-            return this.table;
-        }
-
-        public String toString() {
-            return "TableInfo (table: " + this.table.toString() + ", offset: " + this.offset + ")";
-        }
-    };
+    private TableRegistry tableRegistry;
+    private Map<String, String> topicToTable;
+    private InputRecordConverter converter;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
      */
-    public QdbSinkTask() {}
+    public QdbSinkTask() {
+        this.tableRegistry = new TableRegistry();
+        this.converter = new StructInputRecordConverter();
+    }
 
     @Override
     public String version() {
@@ -96,37 +68,17 @@ public class QdbSinkTask extends SinkTask {
         this.session =
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
-        this.topicToTable =
-           this.resolveTableInfo(this.session,
-                                 (Collection<String>)validatedProps.get(ConnectorUtils.TABLES_CONFIG));
+        this.topicToTable = ConnectorUtils.parseTableFromTopic((Collection<String>)validatedProps.get(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG));
 
-        Table[] tables =
-            this.topicToTable.entrySet().stream()
-            .map((x) -> {
-                    return x.getValue().getTable();
-                })
-            .toArray(Table[]::new);
+        Tables tables = new Tables();
+        for (Map.Entry<String, String> entry : this.topicToTable.entrySet()) {
+            TableInfo t = this.tableRegistry.put(this.session, entry.getValue());
+            tables.add(t.getTable());
+        }
 
         this.writer = Tables.writer(this.session, tables);
 
         log.info("Started QdbSinkTask");
-    }
-
-    /**
-     * Takes a validated table configuration, and resolve the actual Qdb table information
-     * based on it.
-     */
-    static private Map<String, TableInfo> resolveTableInfo(Session session,
-                                                           Collection<String> config) {
-        Map<String, String> parsedConfig = ConnectorUtils.parseTablesConfig(config);
-        Map<String, TableInfo> out = new HashMap<String, TableInfo>();
-
-        for (Map.Entry<String, String> entry : parsedConfig.entrySet()) {
-            Table table = new Table(session, entry.getValue());
-            out.put(entry.getKey(), new TableInfo(table));
-        }
-
-        return out;
     }
 
     @Override
@@ -152,18 +104,19 @@ public class QdbSinkTask extends SinkTask {
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
         for (SinkRecord s : sinkRecords) {
-            if (s.valueSchema() == null ||
-                s.valueSchema().type() != Schema.Type.STRUCT) {
-                throw new DataException("Only Struct values are supported, got: " + s.valueSchema());
-            }
+            Object parsed = this.converter.parse(s);
+            String tableName = this.converter.tableName(s, parsed);
+            TableInfo t = this.tableRegistry.get(tableName);
 
-            TableInfo t = tableFromRecord(this.topicToTable, s);
+            if (t == null) {
+                throw new DataException("Table not found in registry: " + tableName);
+            }
 
             if (t.hasOffset() == false) {
                 t.setOffset(this.writer.tableIndexByName(t.getTable().getName()));
             }
 
-            Value[] row = recordToValue(t.getTable().getColumns(), (Struct)s.value());
+            Value[] row = this.converter.convert(t.getTable().getColumns(), parsed);
 
             try {
                 Timespec ts = (s.timestamp() == null
@@ -188,55 +141,5 @@ public class QdbSinkTask extends SinkTask {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private static Value[] recordToValue(Column[] columns, Struct record) {
-        Value[] out = new Value[columns.length];
-
-        for (int i = 0; i < columns.length; ++i) {
-            Object val = record.get(columns[i].getName());
-
-            if (val == null) {
-                out[i] = Value.createNull();
-            }
-
-            switch (columns[i].getType()) {
-            case DOUBLE:
-                out[i] = Value.createDouble((Double)val);
-                break;
-            case INT64:
-                out[i] = Value.createInt64((Long)val);
-                break;
-            case BLOB:
-                out[i] = Value.createSafeBlob((byte[])val);
-                break;
-            default:
-                throw new DataException("Unsupported column type: " + columns[i].toString());
-            };
-        }
-
-        return out;
-    }
-
-    /**
-     * Looks up the appropriate Table based on a Record. In future version, this can
-     * also contain logic to dynamically resolve a table from a record's struct's field
-     * value.
-     *
-     * @param topicToTable Hardcoded mapping of kafka topic to qdb table.
-     * @param record The Kafka record being processed.
-     */
-    private static TableInfo tableFromRecord(Map<String, TableInfo> topicToTable, SinkRecord record) throws DataException {
-
-        TableInfo t = topicToTable.get(record.topic());
-
-        if (t == null) {
-            log.error("Topic for record not found: " + record.topic());
-            log.error("If this problem persists, please restart the connector with an " +
-                      "appropriate mapping of this topic to a QuasarDB table.");
-            throw new DataException("Unexpected topic, unable to map to QuasarDB table");
-        }
-
-        return t;
     }
 }

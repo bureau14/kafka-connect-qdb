@@ -56,7 +56,7 @@ public class QdbSinkConnector extends SinkConnector {
                     DEFAULT_CLUSTER_URI,
                     Importance.HIGH,
                     "The Cluster uri to connect to.")
-            .define(ConnectorUtils.TABLES_CONFIG,
+            .define(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG,
                     Type.LIST,
                     Importance.HIGH,
                     "Mapping of Kafka topics to QuasarDB timeseries.")
