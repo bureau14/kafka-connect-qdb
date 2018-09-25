@@ -12,8 +12,10 @@ echo "Rebuilding JNI..."
 cd ../qdb-api-java \
     && rm -rf jni \
     && mkdir jni \
-    && cd ../qdb-api-jni/build/ \
-    && rm -rf ./* \
+    && cd ../qdb-api-jni/ \
+    && rm -rf ./build \
+    && mkdir build \
+    && cd build \
     && cmake .. \
     && make -j32 \
     && cp -v ./jni* ../../qdb-api-java/jni/ \
