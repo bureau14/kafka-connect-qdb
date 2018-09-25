@@ -84,7 +84,6 @@ public class QdbSinkTaskTest {
         this.task.start(fixture.props);
 
         this.task.put(Collections.singletonList(record));
-        this.task.stop();
     }
 
     /**
@@ -110,9 +109,6 @@ public class QdbSinkTaskTest {
         String tableName = record.topic();
         TimeRange[] ranges = { new TimeRange(Timespec.now().minusSeconds(60),
                                              Timespec.now()) };
-
-        System.out.println("tablename = " + tableName);
-        System.out.println("ranges = " + Arrays.toString(ranges));
 
         Reader r = Table.reader(TestUtils.createSession(), tableName, ranges);
     }
