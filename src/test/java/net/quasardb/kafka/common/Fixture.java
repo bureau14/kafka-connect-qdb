@@ -17,12 +17,11 @@ import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Value;
 
 
-public class Fixture {
+public class Fixture implements Cloneable {
     private static final int    NUM_TABLES  = 4;
     private static final int    NUM_ROWS    = 1000;
     private static Value.Type[] VALUE_TYPES = { Value.Type.INT64,
                                                 Value.Type.DOUBLE };
-
 
     public Column[][]          columns;
     public Row[][]             rows;
@@ -41,6 +40,18 @@ public class Fixture {
         this.props    = new HashMap<String, String>();
     }
 
+    /**
+     * Copy constructor
+     */
+    public Fixture(Fixture in) {
+        this.columns  = in.columns;
+        this.rows     = in.rows;
+        this.tables   = in.tables;
+        this.schemas  = in.schemas;
+        this.records  = in.records;
+        this.props    = in.props;
+    }
+
     public static Fixture of(Session session) throws IOException {
         Fixture out = new Fixture();
 
@@ -54,18 +65,6 @@ public class Fixture {
                 .toArray(Column[]::new);
             out.rows[i] = TestUtils.generateTableRows(out.columns[i], NUM_ROWS);
             out.tables[i] = TestUtils.createTable(session, out.columns[i]);
-
-            // Calculate/determine Kafka Connect representations of the schemas
-            out.schemas[i] = TestUtils.columnsToSchema(out.columns[i]);
-
-            final Schema schema = out.schemas[i];
-            final String topic  = out.tables[i].getName();
-
-            out.records[i] = Arrays.stream(out.rows[i])
-                .map((row) -> {
-                        return TestUtils.rowToRecord(topic, 0, schema, row);
-                    })
-                .toArray(SinkRecord[]::new);
         }
 
         String topicMap = Arrays.stream(out.tables)
@@ -78,6 +77,34 @@ public class Fixture {
 
         out.props.put(ConnectorUtils.CLUSTER_URI_CONFIG, "qdb://127.0.0.1:28360");
         out.props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, topicMap);
+
+        return out;
+    }
+
+    public Fixture withRecords(Schema.Type schemaType) {
+        Fixture out = new Fixture(this);
+
+        for (int i = 0; i < NUM_TABLES; ++i) {
+            // Calculate/determine Kafka Connect representations of the schemas
+            out.schemas[i] = TestUtils.columnsToSchema(schemaType, out.columns[i]);
+
+            final Schema schema    = out.schemas[i];
+            final String topic     = out.tables[i].getName();
+            final Column[] columns = out.columns[i];
+
+            out.records[i] = Arrays.stream(out.rows[i])
+                .map((row) -> {
+                        try {
+                            return TestUtils.rowToRecord(topic, 0, schema, columns, row);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                .toArray(SinkRecord[]::new);
+        }
+
+        String className = TestUtils.deserializerBySchemaType(schemaType).getCanonicalName();
+        out.props.put(ConnectorUtils.DESERIALIZER_CONFIG, className);
 
         return out;
     }

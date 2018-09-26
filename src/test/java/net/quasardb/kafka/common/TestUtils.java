@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 import java.util.function.Supplier;
 import java.io.IOException;
+import java.io.Writer;
+import java.io.StringWriter;
 
 import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Field;
@@ -15,6 +17,13 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.errors.DataException;
 import net.quasardb.qdb.Session;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonEncoding;
+
+import net.quasardb.kafka.codec.StructDeserializer;
+import net.quasardb.kafka.codec.JsonDeserializer;
+
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Row;
 import net.quasardb.qdb.ts.Value;
@@ -24,6 +33,7 @@ import net.quasardb.qdb.ts.Table;
 public class TestUtils {
 
     private static long n = 1;
+    private static JsonFactory jsonFactory = new JsonFactory();
 
     public static Session createSession() {
         return Session.connect("qdb://127.0.0.1:28360");
@@ -160,8 +170,9 @@ public class TestUtils {
     public static SinkRecord rowToRecord(String topic,
                                          Integer partition,
                                          Schema schema,
-                                         Row row) {
-        return rowToRecord(topic, partition, schema, row.getTimestamp(), row.getValues());
+                                         Column[] columns,
+                                         Row row) throws IOException  {
+        return rowToRecord(topic, partition, schema, columns, row.getTimestamp(), row.getValues());
     }
 
     /**
@@ -170,8 +181,28 @@ public class TestUtils {
     public static SinkRecord rowToRecord(String topic,
                                          Integer partition,
                                          Schema schema,
+                                         Column[] columns,
                                          Timespec time,
-                                         Value[] row) {
+                                         Value[] row) throws IOException  {
+        Object value = null;
+
+        switch (schema.type()) {
+        case STRUCT:
+            value = rowToStructValue(schema, row);
+        case STRING:
+            value = rowToJsonValue(columns, row);
+        };
+
+        return new SinkRecord(topic, partition,
+                              null, null,    // key is unused
+                              schema, value,
+                              -1,            // kafkaOffset
+                              time.toEpochMillis(), TimestampType.CREATE_TIME);
+
+    }
+
+    public static Struct rowToStructValue(Schema schema,
+                                          Value[] row) {
         Struct value = new Struct(schema);
 
         Field[] fields = schema.fields().toArray(new Field[schema.fields().size()]);
@@ -200,19 +231,72 @@ public class TestUtils {
             }
         }
 
-        return new SinkRecord(topic, partition,
-                              null, null,    // key is unused
-                              schema, value,
-                              -1,            // kafkaOffset
-                              time.toEpochMillis(), TimestampType.CREATE_TIME);
+        return value;
+    }
+
+    public static String rowToJsonValue(Column[] columns, Value[] row) throws IOException {
+        Writer out = new StringWriter();
+
+        JsonGenerator gen = jsonFactory.createJsonGenerator(out);
+        gen.writeStartObject();
+
+        for (int i = 0; i < columns.length; ++i) {
+            switch (columns[i].getType()) {
+            case INT64:
+                gen.writeNumberField(columns[i].getName(), row[i].getInt64());
+                break;
+            case DOUBLE:
+                gen.writeNumberField(columns[i].getName(), row[i].getDouble());
+                break;
+            case BLOB:
+                ByteBuffer bb = row[i].getBlob();
+                int size = bb.capacity();
+                byte[] buffer = new byte[size];
+                bb.get(buffer, 0, size);
+                bb.rewind();
+                gen.writeBinaryField(columns[i].getName(), buffer);
+                break;
+            default:
+                throw new DataException("row field type not supported: " + columns[i].toString());
+            }
+        }
+
+
+        gen.writeEndObject();
+        gen.close();
+
+        return out.toString();
     }
 
     /**
-     * Utility function to convert a QuasarDB table definition to a Kafka Schema
+     * Utility function to convert a QuasarDB table definition to a Kafka Schema.
+     *
+     * @param schemaType Type of schema to render. Currently only Schema.Type.STRUCT
+     *                   and Schema.Type.String (JSON) are supported.
+     *
      */
-    public static Schema columnsToSchema(Column[] columns) {
-        SchemaBuilder builder = SchemaBuilder.struct();
+    public static Schema columnsToSchema(Schema.Type schemaType, Column[] columns) {
+        SchemaBuilder builder = new SchemaBuilder(schemaType);
+        switch (schemaType) {
+        case STRUCT:
+            columnsToStructSchema(builder, columns);
+            break;
 
+        case STRING:
+            columnsToJsonSchema(builder);
+            break;
+
+        }
+
+        return builder.build();
+
+    }
+
+
+    /**
+     * Converts a QuasarDB table definition to a Kafka struct-based schema.
+     */
+    public static void columnsToStructSchema(SchemaBuilder builder, Column[] columns) {
         for (Column c : columns) {
             switch (c.getType()) {
             case INT64:
@@ -228,7 +312,29 @@ public class TestUtils {
                 throw new DataException("column field type not supported: " + c.toString());
             }
         }
+    }
 
-        return builder.build();
+    /**
+     * Renders a JSON-schema, which is just a string column.
+     */
+    public static void columnsToJsonSchema(SchemaBuilder builder) {
+    }
+
+    /**
+     * Based on schema, returns appropriate deserializer class.
+     */
+    public static Class deserializerBySchemaType (Schema.Type type) {
+        Class out = null;
+
+        switch (type) {
+        case STRUCT:
+            out = StructDeserializer.class;
+            break;
+        case STRING:
+            out = JsonDeserializer.class;
+            break;
+
+        }
+        return out;
     }
 }

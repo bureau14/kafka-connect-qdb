@@ -28,9 +28,9 @@ import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Writer;
 
+import net.quasardb.kafka.codec.Deserializer;
+import net.quasardb.kafka.codec.StructDeserializer;
 import net.quasardb.kafka.common.ConnectorUtils;
-import net.quasardb.kafka.common.InputRecordConverter;
-import net.quasardb.kafka.common.StructInputRecordConverter;
 import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.TableRegistry;
 
@@ -43,14 +43,12 @@ public class QdbSinkTask extends SinkTask {
 
     private TableRegistry tableRegistry;
     private Map<String, String> topicToTable;
-    private InputRecordConverter converter;
+    private Deserializer deserializer;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
      */
     public QdbSinkTask() {
-        this.tableRegistry = new TableRegistry();
-        this.converter = new StructInputRecordConverter();
     }
 
     @Override
@@ -64,7 +62,12 @@ public class QdbSinkTask extends SinkTask {
             throw new RuntimeException("can only start a task once");
         }
 
+        this.tableRegistry = new TableRegistry();
+
         Map<String, Object> validatedProps = new QdbSinkConnector().config().parse(props);
+
+        this.deserializer = ConnectorUtils.createDeserializer(validatedProps);
+
         this.session =
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
@@ -98,14 +101,13 @@ public class QdbSinkTask extends SinkTask {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
         for (SinkRecord s : sinkRecords) {
-            Object parsed = this.converter.parse(s);
-            String tableName = this.converter.tableName(s, parsed);
+            Object parsed = this.deserializer.parse(s);
+            String tableName = this.deserializer.tableName(s, parsed);
             TableInfo t = this.tableRegistry.get(tableName);
 
             if (t == null) {
@@ -116,7 +118,7 @@ public class QdbSinkTask extends SinkTask {
                 t.setOffset(this.writer.tableIndexByName(t.getTable().getName()));
             }
 
-            Value[] row = this.converter.convert(t.getTable().getColumns(), parsed);
+            Value[] row = this.deserializer.convert(t.getTable().getColumns(), parsed);
 
             try {
                 Timespec ts = (s.timestamp() == null

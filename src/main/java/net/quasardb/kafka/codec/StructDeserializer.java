@@ -1,4 +1,6 @@
-package net.quasardb.kafka.common;
+package net.quasardb.kafka.codec;
+
+import java.util.Map;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
@@ -13,7 +15,11 @@ import net.quasardb.qdb.ts.Value;
  * API for various strategies for converting a Kafka record into
  * a QuasarDB row.
  */
-public class StructInputRecordConverter implements InputRecordConverter {
+public class StructDeserializer implements Deserializer {
+
+    public void start (Map<String, Object> validatedProps) {
+        // Nothing to do here, please move along
+    }
 
     public Object parse(SinkRecord record) {
         if (record.valueSchema() == null ||

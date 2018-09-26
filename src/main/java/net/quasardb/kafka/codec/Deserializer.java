@@ -1,4 +1,6 @@
-package net.quasardb.kafka.common;
+package net.quasardb.kafka.codec;
+
+import java.util.Map;
 
 import org.apache.kafka.connect.sink.SinkRecord;
 
@@ -9,7 +11,14 @@ import net.quasardb.qdb.ts.Value;
  * API for various strategies for converting a Kafka record into
  * a QuasarDB row.
  */
-public interface InputRecordConverter {
+public interface Deserializer {
+
+    /**
+     * Called at the start of the task. Can be used by the deserializer
+     * to initialize internal state and/or parse additional configuration
+     * variables.
+     */
+    public void start (Map<String, Object> validatedProps);
 
     /**
      * Parses Kafka record into internal representation.
@@ -27,6 +36,7 @@ public interface InputRecordConverter {
 
     /**
      * Convert a Kafka record to a QuasarDB row.
+     *
      * @param columns Indexed representation of the columns of the table being
      *                inserted into.
      * @param obj The previously parsed object

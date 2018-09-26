@@ -44,8 +44,9 @@ import net.quasardb.kafka.common.Fixture;
 
 public class QdbSinkTaskTest {
 
-    private static final int    NUM_TASKS   = 10;
-    private static QdbSinkTask  task;
+    private static final int     NUM_TASKS    = 10;
+    private static Schema.Type[] SCHEMA_TYPES = { Schema.Type.STRING };
+    private static QdbSinkTask   task;
 
     @BeforeEach
     public void setup() {
@@ -82,7 +83,6 @@ public class QdbSinkTaskTest {
     @MethodSource("randomRecord")
     public void testPutRow(Fixture fixture, SinkRecord record) {
         this.task.start(fixture.props);
-
         this.task.put(Collections.singletonList(record));
     }
 
@@ -117,7 +117,7 @@ public class QdbSinkTaskTest {
      * Parameter provider for random schemas
      */
     static Stream<Arguments> randomSchemaWithValue() throws IOException {
-        Fixture fixture       = Fixture.of(TestUtils.createSession());
+        Fixture fixture       = Fixture.of(TestUtils.createSession()).withRecords(Schema.Type.STRUCT);
 
         return Stream.of(Arguments.of(fixture, null, null),
                          Arguments.of(fixture, SchemaBuilder.int8(),    (byte)8),
@@ -135,12 +135,20 @@ public class QdbSinkTaskTest {
      * NUM_ROWS rows per entry.
      */
     static Stream<Arguments> randomRecords() throws IOException {
-        Fixture fixture       = Fixture.of(TestUtils.createSession());
-
-        return IntStream.range(0, fixture.records.length)
+        return (IntStream.range(0, SCHEMA_TYPES.length))
             .mapToObj((i) -> {
-                    return Arguments.of(fixture, Arrays.asList(fixture.records[i]));
-                });
+                    try {
+                        return Fixture.of(TestUtils.createSession()).withRecords(SCHEMA_TYPES[i]);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+            .flatMap((fixture) -> {
+                    return IntStream.range(0, fixture.records.length)
+                        .mapToObj((i) -> {
+                                return Arguments.of(fixture, Arrays.asList(fixture.records[i]));
+                            });
+                        });
     }
 
     /**
@@ -148,19 +156,30 @@ public class QdbSinkTaskTest {
      */
     static Stream<Arguments> randomRecord() throws IOException {
         final int MAX_ROWS    = 10;
-        Fixture fixture       = Fixture.of(TestUtils.createSession());
 
-        return IntStream.range(0, Math.min(MAX_ROWS, fixture.records.length))
+        // For each struct type, generate a fixture that holds schema/records
+        // of that type.
+        return (IntStream.range(0, SCHEMA_TYPES.length))
             .mapToObj((i) -> {
-                    return Arguments.of(fixture.records[i]);
+                    try {
+                        return Fixture.of(TestUtils.createSession()).withRecords(SCHEMA_TYPES[i]);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 })
-            .flatMap((args) -> {
-                    SinkRecord[] r = (SinkRecord[])args.get();
-                    return IntStream.range(0, Math.min(MAX_ROWS, r.length))
-                        .mapToObj((j) ->
-                                  {
-                                      return Arguments.of(fixture, r[j]);
-                                  });
-                });
+            .flatMap((fixture) -> {
+                    return IntStream.range(0, Math.min(MAX_ROWS, fixture.records.length))
+                        .mapToObj((i) -> {
+                                return Arguments.of(fixture.records[i]);
+                            })
+                        .flatMap((args) -> {
+                                SinkRecord[] r = (SinkRecord[])args.get();
+                                return IntStream.range(0, Math.min(MAX_ROWS, r.length))
+                                    .mapToObj((j) ->
+                                              {
+                                                  return Arguments.of(fixture, r[j]);
+                                              });
+                            });
+                        });
     }
 }
