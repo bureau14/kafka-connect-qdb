@@ -12,4 +12,4 @@ echo "qdb/log/qdbd.log: "
 cat qdb/log/qdbd.log
 
 echo "qdb/securelog/qdbd.log: "
-cat qdb/securelog/qdbd.log
+# cat qdb/securelog/qdbd.log
