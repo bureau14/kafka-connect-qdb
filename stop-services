@@ -8,14 +8,8 @@ find qdb/securedb
 
 pkill -SIGKILL -f qdbd
 
-echo "qdbd.out.txt: "
-cat qdbd.out.txt
+echo "qdb/log/qdbd.log: "
+cat qdb/log/qdbd.log
 
-echo "qdbd.err.txt: "
-cat qdbd.err.txt
-
-echo "qdbd.secure.out.txt: "
-cat qdbd.secure.out.txt
-
-echo "qdbd.secure.err.txt: "
-cat qdbd.secure.err.txt
+echo "qdb/securelog/qdbd.log: "
+cat qdb/securelog/qdbd.log
