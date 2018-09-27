@@ -55,7 +55,6 @@ public class QdbSinkTaskTest {
 
     @AfterEach
     public void teardown() {
-        this.task.stop();
     }
 
     /**
@@ -84,6 +83,7 @@ public class QdbSinkTaskTest {
     public void testPutRow(Fixture fixture, SinkRecord record) {
         this.task.start(fixture.props);
         this.task.put(Collections.singletonList(record));
+        this.task.stop();
     }
 
     /**
@@ -94,6 +94,7 @@ public class QdbSinkTaskTest {
     public void testPutRows(Fixture fixture, Collection<SinkRecord> records) {
         this.task.start(fixture.props);
         this.task.put(records);
+        this.task.stop();
     }
 
     /**
@@ -111,6 +112,8 @@ public class QdbSinkTaskTest {
                                              Timespec.now()) };
 
         Reader r = Table.reader(TestUtils.createSession(), tableName, ranges);
+
+        this.task.stop();
     }
 
     /**
