@@ -1,5 +1,11 @@
 #!/bin/sh
 
+echo "qdbd files: "
+find qdb/db
+
+echo "qdbd.secure files: "
+find qdb/securedb
+
 pkill -SIGKILL -f qdbd
 
 echo "qdbd.out.txt: "
