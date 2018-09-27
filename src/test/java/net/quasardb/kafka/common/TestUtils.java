@@ -189,8 +189,10 @@ public class TestUtils {
         switch (schema.type()) {
         case STRUCT:
             value = rowToStructValue(schema, row);
+            break;
         case STRING:
             value = rowToJsonValue(columns, row);
+            break;
         };
 
         return new SinkRecord(topic, partition,
