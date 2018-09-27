@@ -98,6 +98,11 @@ public class QdbSinkTask extends SinkTask {
                 this.session.close();
                 this.session = null;
             }
+
+            this.tableRegistry = null;
+            this.topicToTable = null;
+            this.deserializer = null;
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

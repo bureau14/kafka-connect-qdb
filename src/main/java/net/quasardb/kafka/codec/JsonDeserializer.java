@@ -77,7 +77,6 @@ public class JsonDeserializer implements Deserializer {
                 }
                 break;
             }
-            System.out.println("has node for column " + c.getName() + ": " + n.toString());
         }
 
         return out;
