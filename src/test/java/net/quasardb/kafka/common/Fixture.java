@@ -21,7 +21,8 @@ public class Fixture implements Cloneable {
     private static final int    NUM_TABLES  = 4;
     private static final int    NUM_ROWS    = 1000;
     private static Value.Type[] VALUE_TYPES = { Value.Type.INT64,
-                                                Value.Type.DOUBLE };
+                                                Value.Type.DOUBLE,
+                                                Value.Type.BLOB };
 
     public Column[][]          columns;
     public Row[][]             rows;
