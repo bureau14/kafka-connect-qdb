@@ -55,6 +55,7 @@ public class QdbSinkTaskTest {
 
     @AfterEach
     public void teardown() {
+        System.gc();
     }
 
     /**
