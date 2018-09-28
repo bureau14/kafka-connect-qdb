@@ -3,6 +3,7 @@ package net.quasardb.kafka.common;
 import java.util.*;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
+import com.google.common.collect.Streams;
 import java.util.function.Supplier;
 import java.io.IOException;
 import java.io.Writer;
@@ -110,11 +111,13 @@ public class TestUtils {
              .toArray(Value[]::new));
 
 
-        return Stream.generate(valueGen)
+        return
+            Streams.mapWithIndex(Stream.generate(valueGen),
+                                 (v, i) -> new Row(Timespec.now().plusSeconds(i), // adding a second
+                                                                                  // ensure each row
+                                                                                  // has a unique ts
+                                                   v))
             .limit(count)
-            .map((v) ->
-                 new Row(Timespec.now(),
-                         v))
             .toArray(Row[]::new);
     }
 
