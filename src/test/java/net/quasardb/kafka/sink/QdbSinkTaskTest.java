@@ -81,7 +81,7 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testPutRow(Fixture fixture, SinkRecord record) {
+    public void testPutRow(Fixture fixture, Row row, SinkRecord record) {
         this.task.start(fixture.props);
         this.task.put(Collections.singletonList(record));
         this.task.stop();
