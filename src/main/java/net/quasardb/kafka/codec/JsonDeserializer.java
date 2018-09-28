@@ -3,6 +3,9 @@ package net.quasardb.kafka.codec;
 import java.io.IOException;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.data.Schema.Type;
@@ -26,9 +29,11 @@ import net.quasardb.qdb.ts.Value;
  */
 public class JsonDeserializer implements Deserializer {
 
+    private static final Logger log = LoggerFactory.getLogger(JsonDeserializer.class);
     private ObjectMapper jsonMapper;
 
     public void start(Map<String, Object> validatedProps) {
+        log.debug("Initialized JSON deserializer");
         this.jsonMapper = new ObjectMapper();
     }
 

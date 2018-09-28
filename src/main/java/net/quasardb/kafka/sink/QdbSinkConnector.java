@@ -64,6 +64,10 @@ public class QdbSinkConnector extends SinkConnector {
                     Type.CLASS,
                     Importance.HIGH,
                     "Class used to deserialize records on Kafka topic to QuasarDB values.")
+            .define(ConnectorUtils.JSON_TRANSFORM_CONFIG,
+                    Type.LIST,
+                    Importance.MEDIUM,
+                    "(Optional) When using the JSON deserializer, defines transformations to be performed on .")
             ;
     }
 

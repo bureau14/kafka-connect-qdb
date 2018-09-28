@@ -18,6 +18,12 @@ public class ConnectorUtils {
      */
     public static final String DESERIALIZER_CONFIG = "qdb.codec.deserializer";
 
+
+    /**
+     * Defines optional transformation step for JSON input.
+     */
+    public static final String JSON_TRANSFORM_CONFIG = "qdb.codec.json.transform";
+
     /**
      * Parses table input config and emits a mapping of Kafka topics to
      * QuasarDB tables.
