@@ -103,7 +103,8 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testRowsVisibleAfterFlush(Fixture fixture, SinkRecord record) {
+    public void testRowsVisibleAfterFlush(Fixture fixture, Row row, SinkRecord record) {
+
         this.task.start(fixture.props);
         this.task.put(Collections.singletonList(record));
         this.task.flush(new HashMap<>());
@@ -116,7 +117,7 @@ public class QdbSinkTaskTest {
         Reader reader = Table.reader(TestUtils.createSession(), tableName, ranges);
 
         assertEquals(true, reader.hasNext());
-        Row row = reader.next();
+        assertEquals(row, reader.next());
         assertEquals(false, reader.hasNext());
 
         this.task.stop();
@@ -179,14 +180,15 @@ public class QdbSinkTaskTest {
             .flatMap((fixture) -> {
                     return IntStream.range(0, Math.min(MAX_ROWS, fixture.records.length))
                         .mapToObj((i) -> {
-                                return Arguments.of(fixture.records[i]);
+                                return Arguments.of(fixture.rows[i], fixture.records[i]);
                             })
                         .flatMap((args) -> {
-                                SinkRecord[] r = (SinkRecord[])args.get();
-                                return IntStream.range(0, Math.min(MAX_ROWS, r.length))
+                                Row[] rows = (Row[])args.get()[0];
+                                SinkRecord[] records = (SinkRecord[])args.get()[1];
+                                return IntStream.range(0, Math.min(MAX_ROWS, records.length))
                                     .mapToObj((j) ->
                                               {
-                                                  return Arguments.of(fixture, r[j]);
+                                                  return Arguments.of(fixture, rows[j], records[j]);
                                               });
                             });
                         });

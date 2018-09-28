@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import java.io.IOException;
 import java.io.Writer;
 import java.io.StringWriter;
+import java.time.Instant;
 
 import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Field;
@@ -111,11 +112,18 @@ public class TestUtils {
              .toArray(Value[]::new));
 
 
+
+
         return
             Streams.mapWithIndex(Stream.generate(valueGen),
-                                 (v, i) -> new Row(Timespec.now().plusSeconds(i), // adding a second
-                                                                                  // ensure each row
-                                                                                  // has a unique ts
+
+                                 // We are using millisecond-based timestamps on purpose,
+                                 // because Kafka rounds to milliseconds on purpose.
+                                 //
+                                 // Adding one second to each row ensure each row has a
+                                 // unique ts
+                                 (v, i) -> new Row(new Timespec(Instant.now()).plusSeconds(i),
+
                                                    v))
             .limit(count)
             .toArray(Row[]::new);
