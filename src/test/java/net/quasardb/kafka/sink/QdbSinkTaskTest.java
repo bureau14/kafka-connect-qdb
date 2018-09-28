@@ -45,7 +45,7 @@ import net.quasardb.kafka.common.Fixture;
 public class QdbSinkTaskTest {
 
     private static final int     NUM_TASKS    = 10;
-    private static Schema.Type[] SCHEMA_TYPES = { Schema.Type.STRING, Schema.Type.STRUCT };
+    private static Schema.Type[] SCHEMA_TYPES = { Schema.Type.STRUCT, Schema.Type.STRING };
     private static QdbSinkTask   task;
 
     @BeforeEach
@@ -109,10 +109,15 @@ public class QdbSinkTaskTest {
         this.task.flush(new HashMap<>());
 
         String tableName = record.topic();
-        TimeRange[] ranges = { new TimeRange(Timespec.now().minusSeconds(60),
-                                             Timespec.now()) };
 
-        Reader r = Table.reader(TestUtils.createSession(), tableName, ranges);
+        Timespec ts = new Timespec(record.timestamp());
+        TimeRange[] ranges = { new TimeRange(ts, ts.plusNanos(1)) };
+
+        Reader reader = Table.reader(TestUtils.createSession(), tableName, ranges);
+
+        assertEquals(true, reader.hasNext());
+        Row row = reader.next();
+        assertEquals(false, reader.hasNext());
 
         this.task.stop();
     }
