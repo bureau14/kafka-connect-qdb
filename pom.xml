@@ -29,6 +29,11 @@
     </developer>
   </developers>
 
+  <properties>
+    <mvn.compiler.plugin.version>3.8.0</mvn.compiler.plugin.version>
+    <mvn.assembly.plugin.version>3.1.0</mvn.assembly.plugin.version>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -112,11 +117,32 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
+        <version>${mvn.compiler.plugin.version}</version>
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>${mvn.assembly.plugin.version}</version>
+        <configuration>
+          <descriptors>
+            <descriptor>src/assembly/development.xml</descriptor>
+            <descriptor>src/assembly/package.xml</descriptor>
+          </descriptors>
+          <attach>false</attach>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -179,4 +205,21 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>standalone</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+              <descriptors>
+                <descriptor>src/assembly/standalone.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
