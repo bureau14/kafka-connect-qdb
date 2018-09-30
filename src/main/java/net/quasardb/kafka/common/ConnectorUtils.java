@@ -43,20 +43,4 @@ public class ConnectorUtils {
 
         return out;
     }
-
-    /**
-     * Parses codec deserializer String and loads class by this name.
-     */
-    public static Deserializer createDeserializer(Map<String, Object> validatedProps) {
-        Class in = (Class)validatedProps.get(ConnectorUtils.DESERIALIZER_CONFIG);
-        try {
-            Deserializer out = Deserializer.class.cast(in.newInstance());
-            out.start(validatedProps);
-            return out;
-        } catch (InstantiationException e) {
-            throw new DataException(e);
-        } catch (IllegalAccessException e) {
-            throw new DataException(e);
-        }
-    }
 }
