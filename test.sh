@@ -27,11 +27,10 @@ mvn install:install-file -f pom-jni-arch.xml -Darch=linux-x86_64
 
 echo "Building Java"
 mvn package -DskipTests \
-    && cp -v target/qdb-*.jar ../qdb-kafka-connector/java \
-    && cd ../qdb-kafka-connector
+    && cp -v target/qdb-*.jar ../kafka-connect-qdb/java \
+    && cd ../kafka-connect-qdb
 
 echo "Installing Java"
 mvn install:install-file -f pom-java.xml -DpomFile=pom-java.xml
 
-cd ../qdb-kafka-connector
 mvn test
