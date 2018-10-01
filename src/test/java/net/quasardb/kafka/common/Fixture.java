@@ -104,9 +104,6 @@ public class Fixture implements Cloneable {
                 .toArray(SinkRecord[]::new);
         }
 
-        String className = TestUtils.deserializerBySchemaType(schemaType).getCanonicalName();
-        out.props.put(ConnectorUtils.DESERIALIZER_CONFIG, className);
-
         return out;
     }
 }

@@ -6,23 +6,11 @@ import java.util.HashMap;
 
 import org.apache.kafka.connect.errors.DataException;
 
-import net.quasardb.kafka.codec.Deserializer;
-
 public class ConnectorUtils {
 
     public static final String CLUSTER_URI_CONFIG = "qdb.cluster";
     public static final String TABLE_FROM_TOPIC_CONFIG = "qdb.table_from_topic";
 
-    /**
-     * Defines the class to be used to read/write records to/from Kafka topics.
-     */
-    public static final String DESERIALIZER_CONFIG = "qdb.codec.deserializer";
-
-
-    /**
-     * Defines optional transformation step for JSON input.
-     */
-    public static final String JSON_TRANSFORM_CONFIG = "qdb.codec.json.transform";
 
     /**
      * Parses table input config and emits a mapping of Kafka topics to

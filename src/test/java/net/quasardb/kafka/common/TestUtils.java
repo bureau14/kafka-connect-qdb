@@ -23,9 +23,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonEncoding;
 
-import net.quasardb.kafka.codec.StructDeserializer;
-import net.quasardb.kafka.codec.JsonDeserializer;
-
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Row;
 import net.quasardb.qdb.ts.Value;
@@ -331,23 +328,5 @@ public class TestUtils {
      * Renders a JSON-schema, which is just a string column.
      */
     public static void columnsToJsonSchema(SchemaBuilder builder) {
-    }
-
-    /**
-     * Based on schema, returns appropriate deserializer class.
-     */
-    public static Class deserializerBySchemaType (Schema.Type type) {
-        Class out = null;
-
-        switch (type) {
-        case STRUCT:
-            out = StructDeserializer.class;
-            break;
-        case STRING:
-            out = JsonDeserializer.class;
-            break;
-
-        }
-        return out;
     }
 }
