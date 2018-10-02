@@ -2,6 +2,7 @@ package net.quasardb.kafka.common;
 
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.stream.Stream;
 import com.google.common.collect.Streams;
 import java.util.function.Supplier;
@@ -192,16 +193,7 @@ public class TestUtils {
                                          Column[] columns,
                                          Timespec time,
                                          Value[] row) throws IOException  {
-        Object value = null;
-
-        switch (schema.type()) {
-        case STRUCT:
-            value = rowToStructValue(schema, row);
-            break;
-        case STRING:
-            value = rowToJsonValue(columns, row);
-            break;
-        };
+        Object value = rowToMap(columns, row);
 
         return new SinkRecord(topic, partition,
                               null, null,    // key is unused
@@ -209,6 +201,32 @@ public class TestUtils {
                               -1,            // kafkaOffset
                               time.toEpochMillis(), TimestampType.CREATE_TIME);
 
+    }
+
+    private static Map rowToMap(Column[] columns,
+                                Value[] row) {
+        Map out = new HashMap<String, Object>();
+
+        for (int i = 0; i < columns.length; ++i) {
+            switch (columns[i].getType()) {
+            case INT64:
+                out.put(columns[i].getName(), row[i].getInt64());
+                break;
+            case DOUBLE:
+                out.put(columns[i].getName(), row[i].getDouble());
+                break;
+            case BLOB:
+                ByteBuffer bb = row[i].getBlob();
+                int size = bb.capacity();
+                byte[] buffer = new byte[size];
+                bb.get(buffer, 0, size);
+                bb.rewind();
+                out.put(columns[i].getName(), new String(buffer));
+                break;
+            }
+        }
+
+        return out;
     }
 
     public static Struct rowToStructValue(Schema schema,

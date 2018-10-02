@@ -86,8 +86,8 @@ public class Fixture implements Cloneable {
         Fixture out = new Fixture(this);
 
         for (int i = 0; i < NUM_TABLES; ++i) {
-            // Calculate/determine Kafka Connect representations of the schemas
-            out.schemas[i] = TestUtils.columnsToSchema(schemaType, out.columns[i]);
+            // Only using 'schemaless' values for now
+            out.schemas[i]         = null;
 
             final Schema schema    = out.schemas[i];
             final String topic     = out.tables[i].getName();

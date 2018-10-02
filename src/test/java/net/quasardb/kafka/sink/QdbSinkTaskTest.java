@@ -45,7 +45,7 @@ import net.quasardb.kafka.common.Fixture;
 public class QdbSinkTaskTest {
 
     private static final int     NUM_TASKS    = 10;
-    private static Schema.Type[] SCHEMA_TYPES = { Schema.Type.STRUCT, Schema.Type.STRING };
+    private static Schema.Type[] SCHEMA_TYPES = { Schema.Type.STRING };
     private static QdbSinkTask   task;
 
     @BeforeEach
