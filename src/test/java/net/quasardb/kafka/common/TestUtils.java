@@ -120,7 +120,7 @@ public class TestUtils {
                                  //
                                  // Adding one second to each row ensure each row has a
                                  // unique ts
-                                 (v, i) -> new Row(new Timespec(Instant.now()).plusSeconds(i),
+                                 (v, i) -> new Row(new Timespec(Instant.now().toEpochMilli()).plusSeconds(i),
 
                                                    v))
             .limit(count)
