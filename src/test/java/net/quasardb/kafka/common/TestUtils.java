@@ -76,7 +76,7 @@ public class TestUtils {
         case TIMESTAMP:
             return Value.createTimestamp(randomTimestamp());
         case BLOB:
-            return Value.createSafeBlob(createSampleData(complexity));
+            return Value.createSafeString(randomString());
         }
 
         return Value.createNull();
@@ -127,27 +127,8 @@ public class TestUtils {
             .toArray(Row[]::new);
     }
 
-
-    public static ByteBuffer createSampleData() {
-        return createSampleData(32);
-    }
-
-    public static ByteBuffer createSampleData(int size) {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(size);
-        createSampleData(size, buffer);
-        return buffer;
-    }
-
-    public static void createSampleData(int size, ByteBuffer buffer) {
-        byte[] b = new byte[size];
-        createSampleData(b);
-
-        buffer.put(b);
-        buffer.flip();
-    }
-
-    public static void createSampleData(byte[] b) {
-        new Random(n++).nextBytes(b);
+    public static String randomString() {
+        return UUID.randomUUID().toString();
     }
 
     public static double randomDouble() {
