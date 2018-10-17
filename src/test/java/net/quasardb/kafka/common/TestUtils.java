@@ -174,7 +174,20 @@ public class TestUtils {
                                          Column[] columns,
                                          Timespec time,
                                          Value[] row) throws IOException  {
-        Object value = rowToMap(columns, row);
+        Object value = null;
+
+        if (schema != null) {
+            switch (schema.type()) {
+            case STRUCT:
+                value = rowToStructValue(schema, row);
+                break;
+            }
+
+        } else {
+            // Schemaless JSON, so we need to pass our columns
+            value = rowToMap(columns, row);
+        }
+
 
         return new SinkRecord(topic, partition,
                               null, null,    // key is unused
@@ -292,13 +305,12 @@ public class TestUtils {
             break;
 
         case STRING:
-            columnsToJsonSchema(builder);
-            break;
+            // Only supporting schemaless JSON for now, not doing anything
+            return null;
 
         }
 
         return builder.build();
-
     }
 
 
@@ -321,11 +333,5 @@ public class TestUtils {
                 throw new DataException("column field type not supported: " + c.toString());
             }
         }
-    }
-
-    /**
-     * Renders a JSON-schema, which is just a string column.
-     */
-    public static void columnsToJsonSchema(SchemaBuilder builder) {
     }
 }

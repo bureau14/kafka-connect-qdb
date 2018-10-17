@@ -87,7 +87,7 @@ public class Fixture implements Cloneable {
 
         for (int i = 0; i < NUM_TABLES; ++i) {
             // Only using 'schemaless' values for now
-            out.schemas[i]         = null;
+            out.schemas[i]         = TestUtils.columnsToSchema(schemaType, out.columns[i]);;
 
             final Schema schema    = out.schemas[i];
             final String topic     = out.tables[i].getName();
