@@ -77,7 +77,6 @@ public class Fixture implements Cloneable {
 
 
         out.props.put(ConnectorUtils.CLUSTER_URI_CONFIG, "qdb://127.0.0.1:28360");
-        out.props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, topicMap);
 
         return out;
     }

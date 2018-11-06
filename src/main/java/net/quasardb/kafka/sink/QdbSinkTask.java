@@ -32,6 +32,7 @@ import net.quasardb.kafka.common.ConnectorUtils;
 import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.TableRegistry;
 import net.quasardb.kafka.common.RecordConverter;
+import net.quasardb.kafka.common.TableResolver;
 
 public class QdbSinkTask extends SinkTask {
 
@@ -41,7 +42,7 @@ public class QdbSinkTask extends SinkTask {
     private Writer writer;
 
     private TableRegistry tableRegistry;
-    private Map<String, String> topicToTable;
+    private TableResolver tableResolver;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
@@ -67,18 +68,7 @@ public class QdbSinkTask extends SinkTask {
         this.session =
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
-        this.topicToTable = ConnectorUtils.parseTableFromTopic((Collection<String>)validatedProps.get(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG));
-
-        Tables tables = new Tables();
-        for (Map.Entry<String, String> entry : this.topicToTable.entrySet()) {
-            this.log.info("putting table in registry: " + entry.getValue().toString());
-
-
-            TableInfo t = this.tableRegistry.put(this.session, entry.getValue());
-            tables.add(t.getTable());
-        }
-
-        this.writer = Tables.writer(this.session, tables);
+        this.tableResolver = ConnectorUtils.createTableResolver(validatedProps);
 
         log.info("Started QdbSinkTask");
     }
@@ -99,21 +89,41 @@ public class QdbSinkTask extends SinkTask {
             }
 
             this.tableRegistry = null;
-            this.topicToTable = null;
+            this.tableResolver = null;
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    private TableInfo addTableToRegistry(String tableName) {
+        if (tableName == null) {
+            throw new DataException("Invalid table name provided: " + tableName);
+        }
+
+        log.info("Adding table to registry: " + tableName);
+
+        TableInfo t = this.tableRegistry.put(this.session, tableName);
+
+        if (this.writer == null) {
+            log.debug("Initializing Writer");
+            this.writer = Table.writer(this.session, t.getTable());
+        } else {
+            log.debug("Writer already initialized, adding extra table");
+            this.writer.extraTables(t.getTable());
+        }
+
+        return t;
+    }
+
     @Override
     public void put(Collection<SinkRecord> sinkRecords) {
         for (SinkRecord s : sinkRecords) {
-            String tableName = s.topic();
+            String tableName = this.tableResolver.resolve(s);
             TableInfo t = this.tableRegistry.get(tableName);
 
             if (t == null) {
-                throw new DataException("Table not found in registry: " + tableName);
+                t = addTableToRegistry(tableName);
             }
 
             if (t.hasOffset() == false) {

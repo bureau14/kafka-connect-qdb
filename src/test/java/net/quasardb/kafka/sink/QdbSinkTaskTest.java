@@ -64,7 +64,10 @@ public class QdbSinkTaskTest {
     @ParameterizedTest
     @MethodSource("randomSchemaWithValue")
     public void testPutValuePrimitives(Fixture state, Schema schema, Object value) {
-        this.task.start(state.props);
+        Map<String, String> props = state.props;
+        props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
+
+        this.task.start(props);
 
         List<SinkRecord> records = new ArrayList<SinkRecord>();
         records.add(new SinkRecord(null, -1, null, null, schema, value, -1));
@@ -82,7 +85,10 @@ public class QdbSinkTaskTest {
     @ParameterizedTest
     @MethodSource("randomRecord")
     public void testPutRow(Fixture fixture, Row row, SinkRecord record) {
-        this.task.start(fixture.props);
+        Map<String, String> props = fixture.props;
+        props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
+
+        this.task.start(props);
         this.task.put(Collections.singletonList(record));
         this.task.stop();
     }
@@ -93,7 +99,10 @@ public class QdbSinkTaskTest {
     @ParameterizedTest
     @MethodSource("randomRecords")
     public void testPutRows(Fixture fixture, Collection<SinkRecord> records) {
-        this.task.start(fixture.props);
+        Map<String, String> props = fixture.props;
+        props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
+
+        this.task.start(props);
         this.task.put(records);
         this.task.stop();
     }
@@ -104,8 +113,10 @@ public class QdbSinkTaskTest {
     @ParameterizedTest
     @MethodSource("randomRecord")
     public void testRowsVisibleAfterFlush(Fixture fixture, Row row, SinkRecord record) {
+        Map<String, String> props = fixture.props;
+        props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
 
-        this.task.start(fixture.props);
+        this.task.start(props);
         this.task.put(Collections.singletonList(record));
         this.task.flush(new HashMap<>());
 
@@ -123,6 +134,21 @@ public class QdbSinkTaskTest {
         assertEquals(row, row2);
         assertEquals(false, reader.hasNext());
 
+        this.task.stop();
+    }
+
+    /**
+     * Tests that a new table can be created by a skeleton.
+     */
+
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testAutoCreateTable(Fixture fixture, Row row, SinkRecord record) {
+        Map<String, String> props = fixture.props;
+        props.put(ConnectorUtils.TABLE_CONFIG, record.topic());
+
+        this.task.start(props);
+        this.task.put(Collections.singletonList(record));
         this.task.stop();
     }
 

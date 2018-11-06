@@ -57,9 +57,35 @@ public class QdbSinkConnector extends SinkConnector {
                     Importance.HIGH,
                     "The Cluster uri to connect to.")
             .define(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG,
-                    Type.LIST,
-                    Importance.HIGH,
-                    "Mapping of Kafka topics to QuasarDB timeseries.")
+                    Type.BOOLEAN,
+                    false,
+                    Importance.MEDIUM,
+                    "When true, uses Kafka topic id to map directly to QuasarDB table identifier.")
+            .define(ConnectorUtils.TABLE_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "When an identifier is provided, all rows will always be inserted into this table.")
+            .define(ConnectorUtils.TABLE_FROM_COLUMN_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "Identifier of the column to acquire table name from. Cannot be used in combination with qdb.table_from_topic")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_CONFIG,
+                    Type.BOOLEAN,
+                    false,
+                    Importance.MEDIUM,
+                    "When provided, tries to automatically create tables once they are encountered and not found. Requires either qdb.table_skeleton or qdb.table_skeleton_column to be provided.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "Allows providing of a static 'skeleton' table whose schema will be copied into all autocreated tables.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "Allows providing of a column which will be used to look up a dynamic 'skeleton' table whose schema will be copied into autocreated tables.")
             ;
     }
 
