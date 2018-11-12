@@ -228,7 +228,7 @@ public class TestUtils {
             }
         }
 
-        out.put(skeletonTable.getName(), skeletonColumnId);
+        out.put(skeletonColumnId, skeletonTable.getName());
 
         return out;
     }

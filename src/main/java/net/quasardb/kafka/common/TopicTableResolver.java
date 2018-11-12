@@ -18,7 +18,6 @@ public class TopicTableResolver extends TableResolver {
         log.info("Initializing topic table resolver");
     }
 
-
     @Override
     public String resolve(SinkRecord record) throws DataException {
         return record.topic();

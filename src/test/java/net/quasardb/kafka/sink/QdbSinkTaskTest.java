@@ -150,7 +150,10 @@ public class QdbSinkTaskTest {
     @MethodSource("randomRecord")
     public void testAutoCreateTable(Fixture fixture, Row row, SinkRecord record) {
         Map<String, String> props = fixture.props;
-        props.put(ConnectorUtils.TABLE_CONFIG, record.topic());
+        String newTableName = TestUtils.createUniqueAlias();
+
+        props.put(ConnectorUtils.TABLE_CONFIG, newTableName);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG, Fixture.SKELETON_COLUMN_ID);
 
         this.task.start(props);
         this.task.put(Collections.singletonList(record));

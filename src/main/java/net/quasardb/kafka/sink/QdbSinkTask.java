@@ -43,6 +43,7 @@ public class QdbSinkTask extends SinkTask {
 
     private TableRegistry tableRegistry;
     private TableResolver tableResolver;
+    private TableResolver skeletonTableResolver;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
@@ -69,6 +70,7 @@ public class QdbSinkTask extends SinkTask {
             Session.connect((String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG));
 
         this.tableResolver = ConnectorUtils.createTableResolver(validatedProps);
+        this.skeletonTableResolver = ConnectorUtils.createSkeletonTableResolver(validatedProps);
 
         log.info("Started QdbSinkTask");
     }
@@ -96,7 +98,7 @@ public class QdbSinkTask extends SinkTask {
         }
     }
 
-    private TableInfo addTableToRegistry(String tableName) {
+    private TableInfo addTableToRegistry(String tableName, SinkRecord record) throws DataException {
         if (tableName == null) {
             throw new DataException("Invalid table name provided: " + tableName);
         }
@@ -104,6 +106,17 @@ public class QdbSinkTask extends SinkTask {
         log.info("Adding table to registry: " + tableName);
 
         TableInfo t = this.tableRegistry.put(this.session, tableName);
+        if (t == null) {
+            // Table not found
+            if (this.skeletonTableResolver == null) {
+                throw new DataException("Table '" + tableName + "' not found, and no skeleton table configuration for creation, aborting");
+            }
+
+            Table skeleton = new Table(this.session, this.skeletonTableResolver.resolve(record));
+            log.info("creating copy of skeleton table '" + skeleton.getName() + "' into target table '" + tableName + "'");
+            Table newTable = Table.create(this.session, tableName, skeleton);
+            t = this.tableRegistry.put(newTable);
+        }
 
         if (this.writer == null) {
             log.debug("Initializing Async Writer");
@@ -123,7 +136,7 @@ public class QdbSinkTask extends SinkTask {
             TableInfo t = this.tableRegistry.get(tableName);
 
             if (t == null) {
-                t = addTableToRegistry(tableName);
+                t = addTableToRegistry(tableName, s);
             }
 
             if (t.hasOffset() == false) {

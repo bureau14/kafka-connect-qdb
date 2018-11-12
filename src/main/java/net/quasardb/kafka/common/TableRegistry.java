@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.quasardb.qdb.exception.AliasNotFoundException;
 import net.quasardb.qdb.Session;
 import net.quasardb.qdb.ts.Table;
 import net.quasardb.kafka.common.TableInfo;
@@ -28,10 +29,15 @@ public class TableRegistry {
      *
      * @param session Active connection with the QuasarDB cluster
      * @param name Table name to look up and add.
-     * @return A reference to the added TableInfo object inside the registry.
+     * @return A reference to the added TableInfo object inside the registry, or
+     *         null when the table was not found.
      */
     public TableInfo put(Session session, String name) {
-        return this.put(name, new Table(session, name));
+        try {
+            return this.put(name, new Table(session, name));
+        } catch (AliasNotFoundException e) {
+            return null;
+        }
     }
 
     public TableInfo put(Table t) {
