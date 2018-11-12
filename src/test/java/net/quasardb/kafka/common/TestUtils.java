@@ -159,10 +159,14 @@ public class TestUtils {
      */
     public static SinkRecord rowToRecord(String topic,
                                          Integer partition,
+                                         Table skeletonTable,
+                                         String skeletonColumnId,
                                          Schema schema,
                                          Column[] columns,
                                          Row row) throws IOException  {
-        return rowToRecord(topic, partition, schema, columns, row.getTimestamp(), row.getValues());
+        return rowToRecord(topic, partition,
+                           skeletonTable, skeletonColumnId,
+                           schema, columns, row.getTimestamp(), row.getValues());
     }
 
     /**
@@ -170,6 +174,8 @@ public class TestUtils {
      */
     public static SinkRecord rowToRecord(String topic,
                                          Integer partition,
+                                         Table skeletonTable,
+                                         String skeletonColumnId,
                                          Schema schema,
                                          Column[] columns,
                                          Timespec time,
@@ -179,13 +185,13 @@ public class TestUtils {
         if (schema != null) {
             switch (schema.type()) {
             case STRUCT:
-                value = rowToStructValue(schema, row);
+                value = rowToStructValue(schema, skeletonTable, skeletonColumnId, row);
                 break;
             }
 
         } else {
             // Schemaless JSON, so we need to pass our columns
-            value = rowToMap(columns, row);
+            value = rowToMap(columns, skeletonTable, skeletonColumnId, row);
         }
 
 
@@ -198,6 +204,8 @@ public class TestUtils {
     }
 
     private static Map rowToMap(Column[] columns,
+                                Table skeletonTable,
+                                String skeletonColumnId,
                                 Value[] row) {
         Map out = new HashMap<String, Object>();
 
@@ -220,10 +228,14 @@ public class TestUtils {
             }
         }
 
+        out.put(skeletonTable.getName(), skeletonColumnId);
+
         return out;
     }
 
     public static Struct rowToStructValue(Schema schema,
+                                          Table skeletonTable,
+                                          String skeletonColumnId,
                                           Value[] row) {
         Struct value = new Struct(schema);
 
@@ -233,23 +245,28 @@ public class TestUtils {
         // field in our rows. These schemas are always the same for all rows, and
         // we're not testing ommitted fields.
         for(int i = 0; i < fields.length; ++i) {
-            switch (row[i].getType()) {
-            case INT64:
-                value.put(fields[i], row[i].getInt64());
-                break;
-            case DOUBLE:
-                value.put(fields[i], row[i].getDouble());
-                break;
-            case BLOB:
-                ByteBuffer bb = row[i].getBlob();
-                int size = bb.capacity();
-                byte[] buffer = new byte[size];
-                bb.get(buffer, 0, size);
-                bb.rewind();
-                value.put(fields[i], buffer);
-                break;
-            default:
-                throw new DataException("row field type not supported: " + value.toString());
+            if (fields[i].name() == skeletonColumnId) {
+                value.put(skeletonColumnId, skeletonTable.getName());
+
+            } else {
+                switch (row[i].getType()) {
+                case INT64:
+                    value.put(fields[i], row[i].getInt64());
+                    break;
+                case DOUBLE:
+                    value.put(fields[i], row[i].getDouble());
+                    break;
+                case BLOB:
+                    ByteBuffer bb = row[i].getBlob();
+                    int size = bb.capacity();
+                    byte[] buffer = new byte[size];
+                    bb.get(buffer, 0, size);
+                    bb.rewind();
+                    value.put(fields[i], buffer);
+                    break;
+                default:
+                    throw new DataException("row field type not supported: " + value.toString());
+                }
             }
         }
 
@@ -297,11 +314,11 @@ public class TestUtils {
      *                   and Schema.Type.String (JSON) are supported.
      *
      */
-    public static Schema columnsToSchema(Schema.Type schemaType, Column[] columns) {
+    public static Schema columnsToSchema(Schema.Type schemaType, String skeletonColumnId, Column[] columns) {
         SchemaBuilder builder = new SchemaBuilder(schemaType);
         switch (schemaType) {
         case STRUCT:
-            columnsToStructSchema(builder, columns);
+            columnsToStructSchema(builder, skeletonColumnId, columns);
             break;
 
         case STRING:
@@ -317,7 +334,7 @@ public class TestUtils {
     /**
      * Converts a QuasarDB table definition to a Kafka struct-based schema.
      */
-    public static void columnsToStructSchema(SchemaBuilder builder, Column[] columns) {
+    public static void columnsToStructSchema(SchemaBuilder builder, String skeletonColumnId, Column[] columns) {
         for (Column c : columns) {
             switch (c.getType()) {
             case INT64:
@@ -333,5 +350,7 @@ public class TestUtils {
                 throw new DataException("column field type not supported: " + c.toString());
             }
         }
+
+        builder.field(skeletonColumnId, SchemaBuilder.string());
     }
 }

@@ -18,6 +18,7 @@ import net.quasardb.qdb.ts.Value;
 
 
 public class Fixture implements Cloneable {
+    public static final String  SKELETON_COLUMN_ID = "skeleton_table";
     private static final int    NUM_TABLES  = 4;
     private static final int    NUM_ROWS    = 1000;
     private static Value.Type[] VALUE_TYPES = { Value.Type.INT64,
@@ -86,8 +87,9 @@ public class Fixture implements Cloneable {
 
         for (int i = 0; i < NUM_TABLES; ++i) {
             // Only using 'schemaless' values for now
-            out.schemas[i]         = TestUtils.columnsToSchema(schemaType, out.columns[i]);;
+            out.schemas[i]         = TestUtils.columnsToSchema(schemaType, SKELETON_COLUMN_ID, out.columns[i]);
 
+            final Table table      = out.tables[i];
             final Schema schema    = out.schemas[i];
             final String topic     = out.tables[i].getName();
             final Column[] columns = out.columns[i];
@@ -95,7 +97,7 @@ public class Fixture implements Cloneable {
             out.records[i] = Arrays.stream(out.rows[i])
                 .map((row) -> {
                         try {
-                            return TestUtils.rowToRecord(topic, 0, schema, columns, row);
+                            return TestUtils.rowToRecord(topic, 0, table, SKELETON_COLUMN_ID, schema, columns, row);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
