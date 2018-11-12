@@ -106,8 +106,8 @@ public class QdbSinkTask extends SinkTask {
         TableInfo t = this.tableRegistry.put(this.session, tableName);
 
         if (this.writer == null) {
-            log.debug("Initializing Writer");
-            this.writer = Table.writer(this.session, t.getTable());
+            log.debug("Initializing Async Writer");
+            this.writer = Table.asyncWriter(this.session, t.getTable());
         } else {
             log.debug("Writer already initialized, adding extra table");
             this.writer.extraTables(t.getTable());
