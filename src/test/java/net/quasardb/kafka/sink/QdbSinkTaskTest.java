@@ -122,7 +122,7 @@ public class QdbSinkTaskTest {
 
         // Sleep 1 seconds, our flush interval
         try {
-            Thread.sleep(1000);
+            Thread.sleep(1100);
         } catch (Exception e) {
             throw new Error("Unexpected exception", e);
         }
@@ -157,6 +157,25 @@ public class QdbSinkTaskTest {
 
         this.task.start(props);
         this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap());
+
+        // Sleep 1 seconds, our flush interval
+        try {
+            Thread.sleep(1100);
+        } catch (Exception e) {
+            throw new Error("Unexpected exception", e);
+        }
+
+        Timespec ts = new Timespec(record.timestamp());
+        TimeRange[] ranges = { new TimeRange(ts, ts.plusNanos(1)) };
+
+        Reader reader = Table.reader(TestUtils.createSession(), newTableName, ranges);
+        assertEquals(true, reader.hasNext());
+
+        Row row2 = reader.next();
+        assertEquals(row, row2);
+        assertEquals(false, reader.hasNext());
+
         this.task.stop();
     }
 
