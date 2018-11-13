@@ -18,6 +18,8 @@ public class ConnectorUtils {
     public static final String TABLE_FROM_TOPIC_CONFIG = "qdb.table_from_topic";
     public static final String TABLE_FROM_COLUMN_CONFIG = "qdb.table_from_column";
     public static final String TABLE_AUTOCREATE_CONFIG = "qdb.table_autocreate";
+    public static final String TABLE_AUTOCREATE_TAGS_CONFIG = "qdb.table_autocreate_tags";
+    public static final String TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG = "qdb.table_autocreate_tags_column";
     public static final String TABLE_AUTOCREATE_SKELETON_CONFIG = "qdb.table_autocreate_skeleton";
     public static final String TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG = "qdb.table_autocreate_skeleton_column";
 
