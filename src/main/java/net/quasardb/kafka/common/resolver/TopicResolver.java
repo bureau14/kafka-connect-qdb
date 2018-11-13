@@ -1,4 +1,4 @@
-package net.quasardb.kafka.common;
+package net.quasardb.kafka.common.resolver;
 
 import java.util.Collection;
 import java.util.Map;
@@ -10,11 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.errors.DataException;
 
-public class TopicTableResolver extends TableResolver {
+public class TopicResolver extends Resolver<String> {
 
-    private static final Logger log = LoggerFactory.getLogger(StaticTableResolver.class);
+    private static final Logger log = LoggerFactory.getLogger(TopicResolver.class);
 
-    public TopicTableResolver() {
+    public TopicResolver() {
         log.info("Initializing topic table resolver");
     }
 

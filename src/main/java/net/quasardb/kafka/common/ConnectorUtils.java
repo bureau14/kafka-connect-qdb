@@ -9,6 +9,11 @@ import java.util.HashMap;
 
 import org.apache.kafka.connect.errors.DataException;
 
+import net.quasardb.kafka.common.resolver.Resolver;
+import net.quasardb.kafka.common.resolver.TopicResolver;
+import net.quasardb.kafka.common.resolver.StaticResolver;
+import net.quasardb.kafka.common.resolver.ColumnResolver;
+
 public class ConnectorUtils {
 
     private static final Logger log = LoggerFactory.getLogger(ConnectorUtils.class);
@@ -44,30 +49,30 @@ public class ConnectorUtils {
         return out;
     }
 
-    public static TableResolver createTableResolver(Map <String, Object> validatedProps) {
+    public static Resolver<String> createTableResolver(Map <String, Object> validatedProps) {
         if (validatedProps.containsKey(TABLE_CONFIG) &&
             validatedProps.get(TABLE_CONFIG) != null) {
             log.debug(TABLE_CONFIG + " provided, using StaticTableResolver");
-            return new StaticTableResolver((String)validatedProps.get(TABLE_CONFIG));
+            return new StaticResolver<String>((String)validatedProps.get(TABLE_CONFIG));
         } else if (validatedProps.containsKey(TABLE_FROM_TOPIC_CONFIG) &&
                    (Boolean)validatedProps.get(TABLE_FROM_TOPIC_CONFIG) == Boolean.TRUE) {
             log.debug(TABLE_FROM_TOPIC_CONFIG + " set to true, using TopicTableResolver");
-            return new TopicTableResolver();
+            return new TopicResolver();
         } else {
             log.debug("validatedProps: " + validatedProps.toString());
             throw new DataException("No valid TableResolving strategy could be determined, please correct your configuration");
         }
     }
 
-    public static TableResolver createSkeletonTableResolver(Map <String, Object> validatedProps) {
+    public static Resolver<String> createSkeletonTableResolver(Map <String, Object> validatedProps) {
         if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_CONFIG) &&
             validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_SKELETON_CONFIG + " provided, using StaticTableResolver");
-            return new StaticTableResolver((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG));
+            log.debug(TABLE_AUTOCREATE_SKELETON_CONFIG + " provided, using StaticResolver");
+            return new StaticResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG));
         } else if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG) &&
                    validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG + " provided, using ColumnTableResolver");
-            return new ColumnTableResolver((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG));
+            log.debug(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG + " provided, using ColumnResolver");
+            return new ColumnResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG));
         } else {
             log.debug("No skeleton configuration");
             return null;

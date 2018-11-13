@@ -32,7 +32,7 @@ import net.quasardb.kafka.common.ConnectorUtils;
 import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.TableRegistry;
 import net.quasardb.kafka.common.RecordConverter;
-import net.quasardb.kafka.common.TableResolver;
+import net.quasardb.kafka.common.resolver.Resolver;
 
 public class QdbSinkTask extends SinkTask {
 
@@ -42,8 +42,8 @@ public class QdbSinkTask extends SinkTask {
     private Writer writer;
 
     private TableRegistry tableRegistry;
-    private TableResolver tableResolver;
-    private TableResolver skeletonTableResolver;
+    private Resolver<String> tableResolver;
+    private Resolver<String> skeletonTableResolver;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
