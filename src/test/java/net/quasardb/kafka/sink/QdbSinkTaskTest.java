@@ -84,7 +84,7 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testPutRow(Fixture fixture, Row row, SinkRecord record) {
+    public void testPutRow(Fixture fixture, Integer offset, Row row, SinkRecord record) {
         Map<String, String> props = fixture.props;
         props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
 
@@ -98,7 +98,7 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecords")
-    public void testPutRows(Fixture fixture, Collection<SinkRecord> records) {
+    public void testPutRows(Fixture fixture, Integer offset, Collection<SinkRecord> records) {
         Map<String, String> props = fixture.props;
         props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
 
@@ -112,7 +112,10 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testRowsVisibleAfterFlush(Fixture fixture, Row row, SinkRecord record) {
+    public void testRowsVisibleAfterFlush(Fixture fixture,
+                                          Integer offset,
+                                          Row row,
+                                          SinkRecord record) {
         Map<String, String> props = fixture.props;
         props.put(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG, "true");
 
@@ -147,7 +150,10 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testAutoCreateTable(Fixture fixture, Row row, SinkRecord record) {
+    public void testAutoCreateTable(Fixture fixture,
+                                    Integer offset,
+                                    Row row,
+                                    SinkRecord record) {
         Map<String, String> props = fixture.props;
         String newTableName = TestUtils.createUniqueAlias();
 
@@ -184,7 +190,10 @@ public class QdbSinkTaskTest {
      */
     @ParameterizedTest
     @MethodSource("randomRecord")
-    public void testAutoCreateTableWithStaticTags(Fixture fixture, Row row, SinkRecord record) {
+    public void testAutoCreateTableWithStaticTags(Fixture fixture,
+                                                  Integer offset,
+                                                  Row row,
+                                                  SinkRecord record) {
         Map<String, String> props = fixture.props;
         String newTableName = TestUtils.createUniqueAlias();
         List<String> newTableTags = Arrays.asList(TestUtils.createUniqueAlias(),
@@ -197,6 +206,39 @@ public class QdbSinkTaskTest {
         this.task.start(props);
         this.task.put(Collections.singletonList(record));
         this.task.flush(new HashMap());
+
+        for (String tag : newTableTags) {
+            Tables tables = Tables.ofTag(TestUtils.createSession(), tag);
+
+            assertEquals(true, tables.hasTableWithName(newTableName));
+        }
+
+        this.task.stop();
+    }
+
+
+    /**
+     * Tests that a new table's tags can be set automatically.
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testAutoCreateTableWithColumnTags(Fixture fixture,
+                                                  Integer offset,
+                                                  Row row,
+                                                  SinkRecord record) {
+        Map<String, String> props = fixture.props;
+        String newTableName = TestUtils.createUniqueAlias();
+
+        props.put(ConnectorUtils.TABLE_CONFIG, newTableName);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG, Fixture.SKELETON_COLUMN_ID);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG, Fixture.TAGS_COLUMN_ID);
+
+        this.task.start(props);
+        this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap());
+
+        // Figure out which tags are expected
+        String[] newTableTags = fixture.tags[offset];
 
         for (String tag : newTableTags) {
             Tables tables = Tables.ofTag(TestUtils.createSession(), tag);
@@ -240,7 +282,7 @@ public class QdbSinkTaskTest {
             .flatMap((fixture) -> {
                     return IntStream.range(0, fixture.records.length)
                         .mapToObj((i) -> {
-                                return Arguments.of(fixture, Arrays.asList(fixture.records[i]));
+                                return Arguments.of(fixture, i, Arrays.asList(fixture.records[i]));
                             });
                         });
     }
@@ -264,15 +306,19 @@ public class QdbSinkTaskTest {
             .flatMap((fixture) -> {
                     return IntStream.range(0, Math.min(MAX_ROWS, fixture.records.length))
                         .mapToObj((i) -> {
-                                return Arguments.of(fixture.rows[i], fixture.records[i]);
+                                return Arguments.of(i, fixture.rows[i], fixture.records[i]);
                             })
                         .flatMap((args) -> {
-                                Row[] rows = (Row[])args.get()[0];
-                                SinkRecord[] records = (SinkRecord[])args.get()[1];
+                                Integer offset = (Integer)args.get()[0];
+                                Row[] rows = (Row[])args.get()[1];
+                                SinkRecord[] records = (SinkRecord[])args.get()[2];
                                 return IntStream.range(0, Math.min(MAX_ROWS, records.length))
                                     .mapToObj((j) ->
                                               {
-                                                  return Arguments.of(fixture, rows[j], records[j]);
+                                                  return Arguments.of(fixture,
+                                                                      offset,
+                                                                      rows[j],
+                                                                      records[j]);
                                               });
                             });
                         });

@@ -162,11 +162,15 @@ public class TestUtils {
                                          Table skeletonTable,
                                          String skeletonColumnId,
                                          Schema schema,
+                                         List<String> tags,
+                                         String tagsColumnId,
                                          Column[] columns,
                                          Row row) throws IOException  {
         return rowToRecord(topic, partition,
                            skeletonTable, skeletonColumnId,
-                           schema, columns, row.getTimestamp(), row.getValues());
+                           schema,
+                           tags, tagsColumnId,
+                           columns, row.getTimestamp(), row.getValues());
     }
 
     /**
@@ -177,6 +181,8 @@ public class TestUtils {
                                          Table skeletonTable,
                                          String skeletonColumnId,
                                          Schema schema,
+                                         List<String> tags,
+                                         String tagsColumnId,
                                          Column[] columns,
                                          Timespec time,
                                          Value[] row) throws IOException  {
@@ -185,13 +191,19 @@ public class TestUtils {
         if (schema != null) {
             switch (schema.type()) {
             case STRUCT:
-                value = rowToStructValue(schema, skeletonTable, skeletonColumnId, row);
+                value = rowToStructValue(schema,
+                                         skeletonTable, skeletonColumnId,
+                                         tags, tagsColumnId,
+                                         row);
                 break;
             }
 
         } else {
             // Schemaless JSON, so we need to pass our columns
-            value = rowToMap(columns, skeletonTable, skeletonColumnId, row);
+            value = rowToMap(columns,
+                             skeletonTable, skeletonColumnId,
+                             tags, tagsColumnId,
+                             row);
         }
 
 
@@ -206,6 +218,8 @@ public class TestUtils {
     private static Map rowToMap(Column[] columns,
                                 Table skeletonTable,
                                 String skeletonColumnId,
+                                List<String> tags,
+                                String tagsColumnId,
                                 Value[] row) {
         Map out = new HashMap<String, Object>();
 
@@ -229,6 +243,7 @@ public class TestUtils {
         }
 
         out.put(skeletonColumnId, skeletonTable.getName());
+        out.put(tagsColumnId, tags);
 
         return out;
     }
@@ -236,6 +251,8 @@ public class TestUtils {
     public static Struct rowToStructValue(Schema schema,
                                           Table skeletonTable,
                                           String skeletonColumnId,
+                                          List<String> tags,
+                                          String tagsColumnId,
                                           Value[] row) {
         Struct value = new Struct(schema);
 
@@ -247,7 +264,8 @@ public class TestUtils {
         for(int i = 0; i < fields.length; ++i) {
             if (fields[i].name() == skeletonColumnId) {
                 value.put(skeletonColumnId, skeletonTable.getName());
-
+            } else if (fields[i].name() == tagsColumnId) {
+                value.put(tagsColumnId, tags);
             } else {
                 switch (row[i].getType()) {
                 case INT64:
@@ -314,11 +332,14 @@ public class TestUtils {
      *                   and Schema.Type.String (JSON) are supported.
      *
      */
-    public static Schema columnsToSchema(Schema.Type schemaType, String skeletonColumnId, Column[] columns) {
+    public static Schema columnsToSchema(Schema.Type schemaType,
+                                         String skeletonColumnId,
+                                         String tagsColumnId,
+                                         Column[] columns) {
         SchemaBuilder builder = new SchemaBuilder(schemaType);
         switch (schemaType) {
         case STRUCT:
-            columnsToStructSchema(builder, skeletonColumnId, columns);
+            columnsToStructSchema(builder, skeletonColumnId, tagsColumnId, columns);
             break;
 
         case STRING:
@@ -334,7 +355,10 @@ public class TestUtils {
     /**
      * Converts a QuasarDB table definition to a Kafka struct-based schema.
      */
-    public static void columnsToStructSchema(SchemaBuilder builder, String skeletonColumnId, Column[] columns) {
+    public static void columnsToStructSchema(SchemaBuilder builder,
+                                             String skeletonColumnId,
+                                             String tagsColumnId,
+                                             Column[] columns) {
         for (Column c : columns) {
             switch (c.getType()) {
             case INT64:
@@ -352,5 +376,6 @@ public class TestUtils {
         }
 
         builder.field(skeletonColumnId, SchemaBuilder.string());
+        builder.field(tagsColumnId, SchemaBuilder.array(Schema.STRING_SCHEMA));
     }
 }

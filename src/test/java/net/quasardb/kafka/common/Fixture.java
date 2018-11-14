@@ -28,22 +28,21 @@ public class Fixture implements Cloneable {
                                                 Value.Type.DOUBLE,
                                                 Value.Type.BLOB };
 
-    public List<String>        tableTags;
     public Column[][]          columns;
     public Row[][]             rows;
     public Table[]             tables;
+    public String[][]          tags;
     public Schema[]            schemas;
     public SinkRecord[][]      records;
     public Map<String, String> props;
 
     public Fixture() {
-        this.tableTags = Arrays.asList(TestUtils.createUniqueAlias());
         this.columns   = new Column[NUM_TABLES][];
         this.rows      = new Row[NUM_TABLES][];
         this.tables    = new Table[NUM_TABLES];
+        this.tags      = new String[NUM_TABLES][];
         this.schemas   = new Schema[NUM_TABLES];
         this.records   = new SinkRecord[NUM_TABLES][];
-
         this.props     = new HashMap<String, String>();
     }
 
@@ -54,6 +53,7 @@ public class Fixture implements Cloneable {
         this.columns  = in.columns;
         this.rows     = in.rows;
         this.tables   = in.tables;
+        this.tags     = in.tags;
         this.schemas  = in.schemas;
         this.records  = in.records;
         this.props    = in.props;
@@ -72,6 +72,8 @@ public class Fixture implements Cloneable {
                 .toArray(Column[]::new);
             out.rows[i] = TestUtils.generateTableRows(out.columns[i], NUM_ROWS);
             out.tables[i] = TestUtils.createTable(session, out.columns[i]);
+            out.tags[i] = new String[] { TestUtils.createUniqueAlias(),
+                                         TestUtils.createUniqueAlias() };
         }
 
         String topicMap = Arrays.stream(out.tables)
@@ -92,17 +94,29 @@ public class Fixture implements Cloneable {
 
         for (int i = 0; i < NUM_TABLES; ++i) {
             // Only using 'schemaless' values for now
-            out.schemas[i]         = TestUtils.columnsToSchema(schemaType, SKELETON_COLUMN_ID, out.columns[i]);
+            out.schemas[i]         = TestUtils.columnsToSchema(schemaType,
+                                                               SKELETON_COLUMN_ID,
+                                                               TAGS_COLUMN_ID,
+                                                               out.columns[i]);
 
-            final Table table      = out.tables[i];
-            final Schema schema    = out.schemas[i];
-            final String topic     = out.tables[i].getName();
-            final Column[] columns = out.columns[i];
+            final String[] tags     = out.tags[i];
+            final Table table       = out.tables[i];
+            final Schema schema     = out.schemas[i];
+            final String topic      = out.tables[i].getName();
+            final Column[] columns  = out.columns[i];
 
             out.records[i] = Arrays.stream(out.rows[i])
                 .map((row) -> {
                         try {
-                            return TestUtils.rowToRecord(topic, 0, table, SKELETON_COLUMN_ID, schema, columns, row);
+                            return TestUtils.rowToRecord(topic,
+                                                         0,
+                                                         table,
+                                                         SKELETON_COLUMN_ID,
+                                                         schema,
+                                                         Arrays.asList(tags),
+                                                         TAGS_COLUMN_ID,
+                                                         columns,
+                                                         row);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
