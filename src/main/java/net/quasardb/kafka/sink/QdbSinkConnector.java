@@ -56,6 +56,21 @@ public class QdbSinkConnector extends SinkConnector {
                     DEFAULT_CLUSTER_URI,
                     Importance.HIGH,
                     "The Cluster uri to connect to.")
+            .define(ConnectorUtils.SECURITY_USERNAME_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.HIGH,
+                    "For a secure connection, the username to use.")
+            .define(ConnectorUtils.SECURITY_USER_PRIVATE_KEY_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.HIGH,
+                    "For a secure connection, the user's private key.")
+            .define(ConnectorUtils.SECURITY_CLUSTER_PUBLIC_KEY_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.HIGH,
+                    "For a secure connection, the cluster's public key.")
             .define(ConnectorUtils.TABLE_FROM_TOPIC_CONFIG,
                     Type.BOOLEAN,
                     false,

@@ -10,6 +10,7 @@ import java.util.HashMap;
 
 import org.apache.kafka.connect.errors.DataException;
 
+import net.quasardb.qdb.Session;
 import net.quasardb.kafka.common.resolver.Resolver;
 import net.quasardb.kafka.common.resolver.TopicResolver;
 import net.quasardb.kafka.common.resolver.StaticResolver;
@@ -20,6 +21,9 @@ public class ConnectorUtils {
     private static final Logger log = LoggerFactory.getLogger(ConnectorUtils.class);
 
     public static final String CLUSTER_URI_CONFIG = "qdb.cluster";
+    public static final String SECURITY_USERNAME_CONFIG = "qdb.security.username";
+    public static final String SECURITY_USER_PRIVATE_KEY_CONFIG = "qdb.security.user_private_key";
+    public static final String SECURITY_CLUSTER_PUBLIC_KEY_CONFIG = "qdb.security.cluster_public_key";
     public static final String TABLE_CONFIG = "qdb.table";
     public static final String TABLE_FROM_TOPIC_CONFIG = "qdb.table_from_topic";
     public static final String TABLE_FROM_COLUMN_CONFIG = "qdb.table_from_column";
@@ -48,6 +52,26 @@ public class ConnectorUtils {
         }
 
         return out;
+    }
+
+    public static Session connect(Map <String, Object> validatedProps) {
+        String uri = (String)validatedProps.get(ConnectorUtils.CLUSTER_URI_CONFIG);
+
+        if (validatedProps.containsKey(SECURITY_USERNAME_CONFIG) &&
+            validatedProps.containsKey(SECURITY_USER_PRIVATE_KEY_CONFIG) &&
+            validatedProps.containsKey(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG)) {
+            String userName = (String)validatedProps.get(SECURITY_USERNAME_CONFIG);
+            String userPrivateKey = (String)validatedProps.get(SECURITY_USER_PRIVATE_KEY_CONFIG);
+            String clusterPublicKey = (String)validatedProps.get(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG);
+            log.info("Establishing secure connection");
+            return Session.connect(new Session.SecurityOptions(userName,
+                                                               userPrivateKey,
+                                                               clusterPublicKey),
+                                   uri);
+        } else {
+            log.warn("Establishing insecure connection");
+            return Session.connect(uri);
+        }
     }
 
     public static Resolver<String> createTableResolver(Map <String, Object> validatedProps) {

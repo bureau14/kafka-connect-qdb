@@ -83,8 +83,10 @@ public class Fixture implements Cloneable {
                 })
             .collect(Collectors.joining(","));
 
-
-        out.props.put(ConnectorUtils.CLUSTER_URI_CONFIG, "qdb://127.0.0.1:28360");
+        out.props.put(ConnectorUtils.CLUSTER_URI_CONFIG, TestUtils.CLUSTER_URI);
+        out.props.put(ConnectorUtils.SECURITY_USERNAME_CONFIG, TestUtils.SECURITY_USERNAME);
+        out.props.put(ConnectorUtils.SECURITY_USER_PRIVATE_KEY_CONFIG, TestUtils.SECURITY_USER_PRIVATE_KEY);
+        out.props.put(ConnectorUtils.SECURITY_CLUSTER_PUBLIC_KEY_CONFIG, TestUtils.SECURITY_CLUSTER_PUBLIC_KEY);
 
         return out;
     }
