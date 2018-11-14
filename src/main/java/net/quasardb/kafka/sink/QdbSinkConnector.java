@@ -86,6 +86,16 @@ public class QdbSinkConnector extends SinkConnector {
                     null,
                     Importance.MEDIUM,
                     "Allows providing of a column which will be used to look up a dynamic 'skeleton' table whose schema will be copied into autocreated tables.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_TAGS_CONFIG,
+                    Type.LIST,
+                    null,
+                    Importance.MEDIUM,
+                    "Allows providing of static additional tags to be assigned to newly created tables.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "Allows providing of a column which will be used to assign additional tags to newly created tables.")
             ;
     }
 

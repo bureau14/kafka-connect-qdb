@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -79,4 +80,18 @@ public class ConnectorUtils {
         }
     }
 
+    public static Resolver<List<String>> createTableTagsResolver(Map <String, Object> validatedProps) {
+        if (validatedProps.containsKey(TABLE_AUTOCREATE_TAGS_CONFIG) &&
+            validatedProps.get(TABLE_AUTOCREATE_TAGS_CONFIG) != null) {
+            log.debug(TABLE_AUTOCREATE_TAGS_CONFIG + " provided, using StaticResolver");
+            return new StaticResolver<List<String>>((List<String>)validatedProps.get(TABLE_AUTOCREATE_TAGS_CONFIG));
+        } else if (validatedProps.containsKey(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG) &&
+                   validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG) != null) {
+            log.debug(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG + " provided, using ColumnResolver");
+            return new ColumnResolver<List<String>>((String)validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG));
+        } else {
+            log.debug("No table tags configuration");
+            return null;
+        }
+    }
 }

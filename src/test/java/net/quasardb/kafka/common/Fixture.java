@@ -3,6 +3,7 @@ package net.quasardb.kafka.common;
 import java.io.IOException;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.stream.Collectors;
@@ -19,12 +20,15 @@ import net.quasardb.qdb.ts.Value;
 
 public class Fixture implements Cloneable {
     public static final String  SKELETON_COLUMN_ID = "skeleton_table";
+    public static final String  TAGS_COLUMN_ID = "table_tags";
+
     private static final int    NUM_TABLES  = 4;
     private static final int    NUM_ROWS    = 1000;
     private static Value.Type[] VALUE_TYPES = { Value.Type.INT64,
                                                 Value.Type.DOUBLE,
                                                 Value.Type.BLOB };
 
+    public List<String>        tableTags;
     public Column[][]          columns;
     public Row[][]             rows;
     public Table[]             tables;
@@ -33,13 +37,14 @@ public class Fixture implements Cloneable {
     public Map<String, String> props;
 
     public Fixture() {
-        this.columns  = new Column[NUM_TABLES][];
-        this.rows     = new Row[NUM_TABLES][];
-        this.tables   = new Table[NUM_TABLES];
-        this.schemas  = new Schema[NUM_TABLES];
-        this.records  = new SinkRecord[NUM_TABLES][];
+        this.tableTags = Arrays.asList(TestUtils.createUniqueAlias());
+        this.columns   = new Column[NUM_TABLES][];
+        this.rows      = new Row[NUM_TABLES][];
+        this.tables    = new Table[NUM_TABLES];
+        this.schemas   = new Schema[NUM_TABLES];
+        this.records   = new SinkRecord[NUM_TABLES][];
 
-        this.props    = new HashMap<String, String>();
+        this.props     = new HashMap<String, String>();
     }
 
     /**

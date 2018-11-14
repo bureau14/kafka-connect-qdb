@@ -44,6 +44,7 @@ public class QdbSinkTask extends SinkTask {
     private TableRegistry tableRegistry;
     private Resolver<String> tableResolver;
     private Resolver<String> skeletonTableResolver;
+    private Resolver<List<String>> tableTagsResolver;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
@@ -71,6 +72,7 @@ public class QdbSinkTask extends SinkTask {
 
         this.tableResolver = ConnectorUtils.createTableResolver(validatedProps);
         this.skeletonTableResolver = ConnectorUtils.createSkeletonTableResolver(validatedProps);
+        this.tableTagsResolver = ConnectorUtils.createTableTagsResolver(validatedProps);
 
         log.info("Started QdbSinkTask");
     }
@@ -98,6 +100,25 @@ public class QdbSinkTask extends SinkTask {
         }
     }
 
+    private Table createTable(String tableName, SinkRecord record) throws DataException {
+        // Table not found
+        if (this.skeletonTableResolver == null) {
+            throw new DataException("Table '" + tableName + "' not found, and no skeleton table configuration for creation, aborting");
+        }
+
+        Table skeleton = new Table(this.session, this.skeletonTableResolver.resolve(record));
+        log.info("creating copy of skeleton table '" + skeleton.getName() + "' into target table '" + tableName + "'");
+        Table newTable = Table.create(this.session, tableName, skeleton);
+
+        if (this.tableTagsResolver != null) {
+            List<String> tags = this.tableTagsResolver.resolve(record);
+            log.debug("attaching tags " + tags.toString() + " to table " + tableName);
+            Table.attachTags(this.session, tableName, tags);
+        }
+
+        return newTable;
+    }
+
     private TableInfo addTableToRegistry(String tableName, SinkRecord record) throws DataException {
         if (tableName == null) {
             throw new DataException("Invalid table name provided: " + tableName);
@@ -107,15 +128,7 @@ public class QdbSinkTask extends SinkTask {
 
         TableInfo t = this.tableRegistry.put(this.session, tableName);
         if (t == null) {
-            // Table not found
-            if (this.skeletonTableResolver == null) {
-                throw new DataException("Table '" + tableName + "' not found, and no skeleton table configuration for creation, aborting");
-            }
-
-            Table skeleton = new Table(this.session, this.skeletonTableResolver.resolve(record));
-            log.info("creating copy of skeleton table '" + skeleton.getName() + "' into target table '" + tableName + "'");
-            Table newTable = Table.create(this.session, tableName, skeleton);
-            t = this.tableRegistry.put(newTable);
+            t = this.tableRegistry.put(this.createTable(tableName, record));
         }
 
         if (this.writer == null) {

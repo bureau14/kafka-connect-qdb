@@ -145,7 +145,6 @@ public class QdbSinkTaskTest {
     /**
      * Tests that a new table can be created by a skeleton.
      */
-
     @ParameterizedTest
     @MethodSource("randomRecord")
     public void testAutoCreateTable(Fixture fixture, Row row, SinkRecord record) {
@@ -175,6 +174,35 @@ public class QdbSinkTaskTest {
         Row row2 = reader.next();
         assertEquals(row, row2);
         assertEquals(false, reader.hasNext());
+
+        this.task.stop();
+    }
+
+
+    /**
+     * Tests that a new table's tags can be set automatically.
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testAutoCreateTableWithStaticTags(Fixture fixture, Row row, SinkRecord record) {
+        Map<String, String> props = fixture.props;
+        String newTableName = TestUtils.createUniqueAlias();
+        List<String> newTableTags = Arrays.asList(TestUtils.createUniqueAlias(),
+                                                  TestUtils.createUniqueAlias());
+
+        props.put(ConnectorUtils.TABLE_CONFIG, newTableName);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG, Fixture.SKELETON_COLUMN_ID);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_TAGS_CONFIG, String.join(",", newTableTags));
+
+        this.task.start(props);
+        this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap());
+
+        for (String tag : newTableTags) {
+            Tables tables = Tables.ofTag(TestUtils.createSession(), tag);
+
+            assertEquals(true, tables.hasTableWithName(newTableName));
+        }
 
         this.task.stop();
     }
