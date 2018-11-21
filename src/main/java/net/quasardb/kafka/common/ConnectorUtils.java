@@ -59,7 +59,9 @@ public class ConnectorUtils {
 
         if (validatedProps.containsKey(SECURITY_USERNAME_CONFIG) &&
             validatedProps.containsKey(SECURITY_USER_PRIVATE_KEY_CONFIG) &&
-            validatedProps.containsKey(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG)) {
+            validatedProps.get(SECURITY_USER_PRIVATE_KEY_CONFIG) != null &&
+            validatedProps.containsKey(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG) &&
+            validatedProps.get(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG) != null) {
             String userName = (String)validatedProps.get(SECURITY_USERNAME_CONFIG);
             String userPrivateKey = (String)validatedProps.get(SECURITY_USER_PRIVATE_KEY_CONFIG);
             String clusterPublicKey = (String)validatedProps.get(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG);
