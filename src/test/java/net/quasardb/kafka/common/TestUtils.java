@@ -69,8 +69,16 @@ public class TestUtils {
      */
     public static Table createTable(Session session,
                                     Column[] columns) throws IOException {
+        String alias = createUniqueAlias();
+
+        // Evil hack, also create skeleton table
+
+        Table skeleton = Table.create(session,
+                                      alias + "_skeleton",
+                                      columns);
+
         return Table.create(session,
-                            createUniqueAlias(),
+                            alias,
                             columns);
     }
 
@@ -170,6 +178,8 @@ public class TestUtils {
                                          String skeletonColumnId,
                                          String tableName,
                                          String tableColumnId,
+                                         String[] tableParts,
+                                         String[] tableCompositeColumnNames,
                                          Schema schema,
                                          List<String> tags,
                                          String tagsColumnId,
@@ -178,6 +188,7 @@ public class TestUtils {
         return rowToRecord(topic, partition,
                            skeletonTable, skeletonColumnId,
                            tableName, tableColumnId,
+                           tableParts,tableCompositeColumnNames,
                            schema,
                            tags, tagsColumnId,
                            columns, row.getTimestamp(), row.getValues());
@@ -192,6 +203,8 @@ public class TestUtils {
                                          String skeletonColumnId,
                                          String tableName,
                                          String tableColumnId,
+                                         String[] tableParts,
+                                         String[] tableCompositeColumnNames,
                                          Schema schema,
                                          List<String> tags,
                                          String tagsColumnId,
@@ -206,6 +219,7 @@ public class TestUtils {
                 value = rowToStructValue(schema,
                                          skeletonTable, skeletonColumnId,
                                          tableName, tableColumnId,
+                                         tableParts, tableCompositeColumnNames,
                                          tags, tagsColumnId,
                                          row);
                 break;
@@ -216,6 +230,7 @@ public class TestUtils {
             value = rowToMap(columns,
                              skeletonTable, skeletonColumnId,
                              tableName, tableColumnId,
+                             tableParts, tableCompositeColumnNames,
                              tags, tagsColumnId,
                              row);
         }
@@ -234,6 +249,8 @@ public class TestUtils {
                                 String skeletonColumnId,
                                 String tableName,
                                 String tableColumnId,
+                                String[] tableParts,
+                                String[] tableCompositeColumnNames,
                                 List<String> tags,
                                 String tagsColumnId,
                                 Value[] row) {
@@ -261,6 +278,8 @@ public class TestUtils {
         out.put(skeletonColumnId, skeletonTable.getName());
         out.put(tableColumnId, tableName);
         out.put(tagsColumnId, tags);
+        out.put(tableCompositeColumnNames[0], tableParts[0]);
+        out.put(tableCompositeColumnNames[1], tableParts[1]);
 
         return out;
     }
@@ -270,6 +289,8 @@ public class TestUtils {
                                           String skeletonColumnId,
                                           String tableName,
                                           String tableColumnId,
+                                          String[] tableParts,
+                                          String[] tableCompositeColumnNames,
                                           List<String> tags,
                                           String tagsColumnId,
                                           Value[] row) {
@@ -285,6 +306,10 @@ public class TestUtils {
                 value.put(skeletonColumnId, skeletonTable.getName());
             } else if (fields[i].name() == tableColumnId) {
                 value.put(tableColumnId, tableName);
+            } else if (fields[i].name() == tableCompositeColumnNames[0]) {
+                value.put(tableCompositeColumnNames[0], tableParts[0]);
+            } else if (fields[i].name() == tableCompositeColumnNames[1]) {
+                value.put(tableCompositeColumnNames[1], tableParts[1]);
             } else if (fields[i].name() == tagsColumnId) {
                 value.put(tagsColumnId, tags);
             } else {
@@ -356,12 +381,13 @@ public class TestUtils {
     public static Schema columnsToSchema(Schema.Type schemaType,
                                          String skeletonColumnId,
                                          String tableColumnId,
+                                         String[] tableCompositeColumnsIds,
                                          String tagsColumnId,
                                          Column[] columns) {
         SchemaBuilder builder = new SchemaBuilder(schemaType);
         switch (schemaType) {
         case STRUCT:
-            columnsToStructSchema(builder, skeletonColumnId, tableColumnId, tagsColumnId, columns);
+            columnsToStructSchema(builder, skeletonColumnId, tableColumnId, tableCompositeColumnsIds, tagsColumnId, columns);
             break;
 
         case STRING:
@@ -380,6 +406,7 @@ public class TestUtils {
     public static void columnsToStructSchema(SchemaBuilder builder,
                                              String skeletonColumnId,
                                              String tableColumnId,
+                                             String[] tableCompositeColumnsIds,
                                              String tagsColumnId,
                                              Column[] columns) {
         for (Column c : columns) {
@@ -400,6 +427,8 @@ public class TestUtils {
 
         builder.field(skeletonColumnId, SchemaBuilder.string());
         builder.field(tableColumnId, SchemaBuilder.string());
+        builder.field(tableCompositeColumnsIds[0], SchemaBuilder.string());
+        builder.field(tableCompositeColumnsIds[1], SchemaBuilder.string());
         builder.field(tagsColumnId, SchemaBuilder.array(Schema.STRING_SCHEMA));
     }
 }

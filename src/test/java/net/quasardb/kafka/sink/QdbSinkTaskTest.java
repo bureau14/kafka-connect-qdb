@@ -159,6 +159,7 @@ public class QdbSinkTaskTest {
 
         props.put(ConnectorUtils.TABLE_CONFIG, newTableName);
         props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG, Fixture.SKELETON_COLUMN_ID);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG, "_skeleton");
 
         this.task.start(props);
         this.task.put(Collections.singletonList(record));
@@ -274,11 +275,56 @@ public class QdbSinkTaskTest {
             throw new Error("Unexpected exception", e);
         }
 
-        String tableFromColumnName = fixture.tableFromColumnNames[offset];
+        String tableFromColumnName = fixture.tableFromColumnName[offset];
 
         Timespec ts = new Timespec(record.timestamp());
         TimeRange[] ranges = { new TimeRange(ts, ts.plusNanos(1)) };
         Reader reader = Table.reader(TestUtils.createSession(), tableFromColumnName, ranges);
+        assertEquals(true, reader.hasNext());
+
+
+
+
+        this.task.stop();
+    }
+
+
+    /**
+     * Tests that a table can be derived from a composite of multiple columns
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testResolveTableFromCompositeColumns(Fixture fixture,
+                                                     Integer offset,
+                                                     Row row,
+                                                     SinkRecord record) {
+        Map<String, String> props = fixture.props;
+
+
+        String tableNameDelim   = fixture.tableCompositeColumnDelim[offset];
+        String[] tableNameParts = fixture.tableCompositeColumnParts[offset];
+
+        props.put(ConnectorUtils.TABLE_FROM_COMPOSITE_COLUMNS_CONFIG, String.join(",", Fixture.TABLE_COMPOSITE_COLUMNS_IDS));
+        props.put(ConnectorUtils.TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG, tableNameDelim);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG, Fixture.SKELETON_COLUMN_ID);
+
+        this.task.start(props);
+        this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap());
+
+        // Sleep 1 seconds, our flush interval
+        try {
+            Thread.sleep(1100);
+        } catch (Exception e) {
+            throw new Error("Unexpected exception", e);
+        }
+
+        Timespec ts = new Timespec(record.timestamp());
+        TimeRange[] ranges = { new TimeRange(ts, ts.plusNanos(1)) };
+
+        String tableName = String.join(tableNameDelim, tableNameParts);
+
+        Reader reader = Table.reader(TestUtils.createSession(), tableName, ranges);
         assertEquals(true, reader.hasNext());
 
 

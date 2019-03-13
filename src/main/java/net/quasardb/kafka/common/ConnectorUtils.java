@@ -14,7 +14,9 @@ import net.quasardb.qdb.Session;
 import net.quasardb.kafka.common.resolver.Resolver;
 import net.quasardb.kafka.common.resolver.TopicResolver;
 import net.quasardb.kafka.common.resolver.StaticResolver;
-import net.quasardb.kafka.common.resolver.ColumnResolver;
+import net.quasardb.kafka.common.resolver.StringColumnResolver;
+import net.quasardb.kafka.common.resolver.ListColumnResolver;
+import net.quasardb.kafka.common.resolver.ColumnsResolver;
 
 public class ConnectorUtils {
 
@@ -27,11 +29,14 @@ public class ConnectorUtils {
     public static final String TABLE_CONFIG = "qdb.table";
     public static final String TABLE_FROM_TOPIC_CONFIG = "qdb.table_from_topic";
     public static final String TABLE_FROM_COLUMN_CONFIG = "qdb.table_from_column";
+    public static final String TABLE_FROM_COMPOSITE_COLUMNS_CONFIG = "qdb.table_from_columns";
+    public static final String TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG = "qdb.table_from_columns_delimiter";
     public static final String TABLE_AUTOCREATE_CONFIG = "qdb.table_autocreate";
     public static final String TABLE_AUTOCREATE_TAGS_CONFIG = "qdb.table_autocreate_tags";
     public static final String TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG = "qdb.table_autocreate_tags_column";
     public static final String TABLE_AUTOCREATE_SKELETON_CONFIG = "qdb.table_autocreate_skeleton";
     public static final String TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG = "qdb.table_autocreate_skeleton_column";
+    public static final String TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG = "qdb.table_autocreate_skeleton_suffix";
 
 
     /**
@@ -77,10 +82,26 @@ public class ConnectorUtils {
     }
 
     public static Resolver<String> createTableResolver(Map <String, Object> validatedProps) {
+
+        System.err.println("validatedProps = " + validatedProps.toString());
+
         if (validatedProps.containsKey(TABLE_FROM_COLUMN_CONFIG) &&
             validatedProps.get(TABLE_FROM_COLUMN_CONFIG) != null) {
-            log.debug(TABLE_FROM_COLUMN_CONFIG + " set to true, using ColumnResolver");
-            return new ColumnResolver<String>((String)validatedProps.get(TABLE_FROM_COLUMN_CONFIG));
+            log.debug(TABLE_FROM_COLUMN_CONFIG + " set, using ColumnResolver");
+            return new StringColumnResolver((String)validatedProps.get(TABLE_FROM_COLUMN_CONFIG));
+        } else if (validatedProps.containsKey(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG) &&
+                   validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG) != null) {
+            log.debug(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG + " set, using ColumnsResolver");
+            List<String> columns = (List<String>)validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG);
+            if (validatedProps.containsKey(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) &&
+                validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) != null) {
+                log.debug(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " set, using a delimiter");
+                return new ColumnsResolver(columns,
+                                           (String)validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG));
+            } else {
+                log.debug(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " not set, not using a delimiter");
+                return new ColumnsResolver(columns);
+            }
         } else if (validatedProps.containsKey(TABLE_FROM_TOPIC_CONFIG) &&
                    (Boolean)validatedProps.get(TABLE_FROM_TOPIC_CONFIG) == Boolean.TRUE) {
             log.debug(TABLE_FROM_TOPIC_CONFIG + " set to true, using TopicResolver");
@@ -98,12 +119,22 @@ public class ConnectorUtils {
     public static Resolver<String> createSkeletonTableResolver(Map <String, Object> validatedProps) {
         if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_CONFIG) &&
             validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_SKELETON_CONFIG + " provided, using StaticResolver");
+            log.debug(TABLE_AUTOCREATE_SKELETON_CONFIG + " provided");
             return new StaticResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG));
         } else if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG) &&
                    validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG + " provided, using ColumnResolver");
-            return new ColumnResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG));
+            log.debug(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG + " provided");
+
+            if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG) &&
+                validatedProps.get(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG) != null) {
+                log.debug(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG + " provided");
+                return new StringColumnResolver((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG),
+                                                (String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG));
+            } else {
+                log.debug(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG + " not provided");
+                return new StringColumnResolver((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG));
+            }
+
         } else {
             log.debug("No skeleton configuration");
             return null;
@@ -118,7 +149,7 @@ public class ConnectorUtils {
         } else if (validatedProps.containsKey(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG) &&
                    validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG) != null) {
             log.debug(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG + " provided, using ColumnResolver");
-            return new ColumnResolver<List<String>>((String)validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG));
+            return new ListColumnResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG));
         } else {
             log.debug("No table tags configuration");
             return null;

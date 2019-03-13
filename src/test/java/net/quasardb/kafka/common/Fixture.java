@@ -19,48 +19,55 @@ import net.quasardb.qdb.ts.Value;
 
 
 public class Fixture implements Cloneable {
-    public static final String  SKELETON_COLUMN_ID = "skeleton_table";
-    public static final String  TABLE_COLUMN_ID = "table_id";
-    public static final String  TAGS_COLUMN_ID = "table_tags";
+    public static final String   SKELETON_COLUMN_ID          = "skeleton_table";
+    public static final String   TABLE_COLUMN_ID             = "table_id";
+    public static final String[] TABLE_COMPOSITE_COLUMNS_IDS = {"table_id1", "table_id2"};
+    public static final String   TAGS_COLUMN_ID              = "table_tags";
 
-    private static final int    NUM_TABLES  = 4;
-    private static final int    NUM_ROWS    = 1000;
-    private static Value.Type[] VALUE_TYPES = { Value.Type.INT64,
-                                                Value.Type.DOUBLE,
-                                                Value.Type.BLOB };
+    private static final int     NUM_TABLES  = 1;
+    private static final int     NUM_ROWS    = 2;
+    private static Value.Type[]  VALUE_TYPES = { Value.Type.INT64,
+                                                 Value.Type.DOUBLE,
+                                                 Value.Type.BLOB };
 
     public Column[][]          columns;
     public Row[][]             rows;
     public Table[]             tables;
-    public String[]            tableFromColumnNames;
+    public String[]            tableFromColumnName;
+    public String[][]          tableCompositeColumnParts;
+    public String[]            tableCompositeColumnDelim;
     public String[][]          tags;
     public Schema[]            schemas;
     public SinkRecord[][]      records;
     public Map<String, String> props;
 
     public Fixture() {
-        this.columns              = new Column[NUM_TABLES][];
-        this.rows                 = new Row[NUM_TABLES][];
-        this.tables               = new Table[NUM_TABLES];
-        this.tableFromColumnNames = new String[NUM_TABLES];
-        this.tags                 = new String[NUM_TABLES][];
-        this.schemas              = new Schema[NUM_TABLES];
-        this.records              = new SinkRecord[NUM_TABLES][];
-        this.props                = new HashMap<String, String>();
+        this.columns                    = new Column[NUM_TABLES][];
+        this.rows                       = new Row[NUM_TABLES][];
+        this.tables                     = new Table[NUM_TABLES];
+        this.tableFromColumnName        = new String[NUM_TABLES];
+        this.tableCompositeColumnParts  = new String[NUM_TABLES][];
+        this.tableCompositeColumnDelim  = new String[NUM_TABLES];
+        this.tags                       = new String[NUM_TABLES][];
+        this.schemas                    = new Schema[NUM_TABLES];
+        this.records                    = new SinkRecord[NUM_TABLES][];
+        this.props                      = new HashMap<String, String>();
     }
 
     /**
      * Copy constructor
      */
     public Fixture(Fixture in) {
-        this.columns              = in.columns;
-        this.rows                 = in.rows;
-        this.tables               = in.tables;
-        this.tableFromColumnNames = in.tableFromColumnNames;
-        this.tags                 = in.tags;
-        this.schemas              = in.schemas;
-        this.records              = in.records;
-        this.props                = in.props;
+        this.columns                   = in.columns;
+        this.rows                      = in.rows;
+        this.tables                    = in.tables;
+        this.tableFromColumnName       = in.tableFromColumnName;
+        this.tableCompositeColumnParts = in.tableCompositeColumnParts;
+        this.tableCompositeColumnDelim = in.tableCompositeColumnDelim;
+        this.tags                      = in.tags;
+        this.schemas                   = in.schemas;
+        this.records                   = in.records;
+        this.props                     = in.props;
     }
 
     public static Fixture of(Session session) throws IOException {
@@ -76,7 +83,10 @@ public class Fixture implements Cloneable {
                 .toArray(Column[]::new);
             out.rows[i] = TestUtils.generateTableRows(out.columns[i], NUM_ROWS);
             out.tables[i] = TestUtils.createTable(session, out.columns[i]);
-            out.tableFromColumnNames[i] = TestUtils.createUniqueAlias(); // Generate unique, alternative table name from each table
+            out.tableFromColumnName[i] = TestUtils.createUniqueAlias(); // Generate unique, alternative table name from each table
+            out.tableCompositeColumnParts[i] = new String[] { TestUtils.createUniqueAlias(),
+                                                              TestUtils.createUniqueAlias() };
+            out.tableCompositeColumnDelim[i] = ".";
             out.tags[i] = new String[] { TestUtils.createUniqueAlias(),
                                          TestUtils.createUniqueAlias() };
         }
@@ -104,15 +114,18 @@ public class Fixture implements Cloneable {
             out.schemas[i]         = TestUtils.columnsToSchema(schemaType,
                                                                SKELETON_COLUMN_ID,
                                                                TABLE_COLUMN_ID,
+                                                               TABLE_COMPOSITE_COLUMNS_IDS,
                                                                TAGS_COLUMN_ID,
                                                                out.columns[i]);
 
-            final String[] tags     = out.tags[i];
-            final Table table       = out.tables[i];
-            final String tableName  = out.tableFromColumnNames[i];
-            final Schema schema     = out.schemas[i];
-            final String topic      = out.tables[i].getName();
-            final Column[] columns  = out.columns[i];
+            final String[] tags           = out.tags[i];
+            final Table table             = out.tables[i];
+            final String tableName        = out.tableFromColumnName[i];
+            final String[] tableNameParts = out.tableCompositeColumnParts[i];
+            final String tablePartsDelim  = out.tableCompositeColumnDelim[i];
+            final Schema schema           = out.schemas[i];
+            final String topic            = out.tables[i].getName();
+            final Column[] columns        = out.columns[i];
 
             out.records[i] = Arrays.stream(out.rows[i])
                 .map((row) -> {
@@ -123,6 +136,8 @@ public class Fixture implements Cloneable {
                                                          SKELETON_COLUMN_ID,
                                                          tableName,
                                                          TABLE_COLUMN_ID,
+                                                         tableNameParts,
+                                                         TABLE_COMPOSITE_COLUMNS_IDS,
                                                          schema,
                                                          Arrays.asList(tags),
                                                          TAGS_COLUMN_ID,

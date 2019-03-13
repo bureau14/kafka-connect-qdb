@@ -86,6 +86,16 @@ public class QdbSinkConnector extends SinkConnector {
                     null,
                     Importance.MEDIUM,
                     "Identifier of the column to acquire table name from. Cannot be used in combination with qdb.table_from_topic")
+            .define(ConnectorUtils.TABLE_FROM_COMPOSITE_COLUMNS_CONFIG,
+                    Type.LIST,
+                    null,
+                    Importance.MEDIUM,
+                    "Identifier of the columns to acquire table name from, joins strings of columns into a table name. Cannot be used in combination with qdb.table_from_topic or qdb.table_from_column.")
+            .define(ConnectorUtils.TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "Optional identifier to use for joining columns into a single table name.")
             .define(ConnectorUtils.TABLE_AUTOCREATE_CONFIG,
                     Type.BOOLEAN,
                     false,
@@ -101,6 +111,11 @@ public class QdbSinkConnector extends SinkConnector {
                     null,
                     Importance.MEDIUM,
                     "Allows providing of a column which will be used to look up a dynamic 'skeleton' table whose schema will be copied into autocreated tables.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "When a skeleton table is derived from a column's value through qdb.table_autocreate_skeleton_column, this allows adding an additional suffix to those.")
             .define(ConnectorUtils.TABLE_AUTOCREATE_TAGS_CONFIG,
                     Type.LIST,
                     null,
