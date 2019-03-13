@@ -20,6 +20,7 @@ import net.quasardb.qdb.ts.Value;
 
 public class Fixture implements Cloneable {
     public static final String  SKELETON_COLUMN_ID = "skeleton_table";
+    public static final String  TABLE_COLUMN_ID = "table_id";
     public static final String  TAGS_COLUMN_ID = "table_tags";
 
     private static final int    NUM_TABLES  = 4;
@@ -31,32 +32,35 @@ public class Fixture implements Cloneable {
     public Column[][]          columns;
     public Row[][]             rows;
     public Table[]             tables;
+    public String[]            tableFromColumnNames;
     public String[][]          tags;
     public Schema[]            schemas;
     public SinkRecord[][]      records;
     public Map<String, String> props;
 
     public Fixture() {
-        this.columns   = new Column[NUM_TABLES][];
-        this.rows      = new Row[NUM_TABLES][];
-        this.tables    = new Table[NUM_TABLES];
-        this.tags      = new String[NUM_TABLES][];
-        this.schemas   = new Schema[NUM_TABLES];
-        this.records   = new SinkRecord[NUM_TABLES][];
-        this.props     = new HashMap<String, String>();
+        this.columns              = new Column[NUM_TABLES][];
+        this.rows                 = new Row[NUM_TABLES][];
+        this.tables               = new Table[NUM_TABLES];
+        this.tableFromColumnNames = new String[NUM_TABLES];
+        this.tags                 = new String[NUM_TABLES][];
+        this.schemas              = new Schema[NUM_TABLES];
+        this.records              = new SinkRecord[NUM_TABLES][];
+        this.props                = new HashMap<String, String>();
     }
 
     /**
      * Copy constructor
      */
     public Fixture(Fixture in) {
-        this.columns  = in.columns;
-        this.rows     = in.rows;
-        this.tables   = in.tables;
-        this.tags     = in.tags;
-        this.schemas  = in.schemas;
-        this.records  = in.records;
-        this.props    = in.props;
+        this.columns              = in.columns;
+        this.rows                 = in.rows;
+        this.tables               = in.tables;
+        this.tableFromColumnNames = in.tableFromColumnNames;
+        this.tags                 = in.tags;
+        this.schemas              = in.schemas;
+        this.records              = in.records;
+        this.props                = in.props;
     }
 
     public static Fixture of(Session session) throws IOException {
@@ -72,6 +76,7 @@ public class Fixture implements Cloneable {
                 .toArray(Column[]::new);
             out.rows[i] = TestUtils.generateTableRows(out.columns[i], NUM_ROWS);
             out.tables[i] = TestUtils.createTable(session, out.columns[i]);
+            out.tableFromColumnNames[i] = TestUtils.createUniqueAlias(); // Generate unique, alternative table name from each table
             out.tags[i] = new String[] { TestUtils.createUniqueAlias(),
                                          TestUtils.createUniqueAlias() };
         }
@@ -98,11 +103,13 @@ public class Fixture implements Cloneable {
             // Only using 'schemaless' values for now
             out.schemas[i]         = TestUtils.columnsToSchema(schemaType,
                                                                SKELETON_COLUMN_ID,
+                                                               TABLE_COLUMN_ID,
                                                                TAGS_COLUMN_ID,
                                                                out.columns[i]);
 
             final String[] tags     = out.tags[i];
             final Table table       = out.tables[i];
+            final String tableName  = out.tableFromColumnNames[i];
             final Schema schema     = out.schemas[i];
             final String topic      = out.tables[i].getName();
             final Column[] columns  = out.columns[i];
@@ -114,6 +121,8 @@ public class Fixture implements Cloneable {
                                                          0,
                                                          table,
                                                          SKELETON_COLUMN_ID,
+                                                         tableName,
+                                                         TABLE_COLUMN_ID,
                                                          schema,
                                                          Arrays.asList(tags),
                                                          TAGS_COLUMN_ID,

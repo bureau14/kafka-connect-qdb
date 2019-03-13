@@ -168,6 +168,8 @@ public class TestUtils {
                                          Integer partition,
                                          Table skeletonTable,
                                          String skeletonColumnId,
+                                         String tableName,
+                                         String tableColumnId,
                                          Schema schema,
                                          List<String> tags,
                                          String tagsColumnId,
@@ -175,6 +177,7 @@ public class TestUtils {
                                          Row row) throws IOException  {
         return rowToRecord(topic, partition,
                            skeletonTable, skeletonColumnId,
+                           tableName, tableColumnId,
                            schema,
                            tags, tagsColumnId,
                            columns, row.getTimestamp(), row.getValues());
@@ -187,6 +190,8 @@ public class TestUtils {
                                          Integer partition,
                                          Table skeletonTable,
                                          String skeletonColumnId,
+                                         String tableName,
+                                         String tableColumnId,
                                          Schema schema,
                                          List<String> tags,
                                          String tagsColumnId,
@@ -200,6 +205,7 @@ public class TestUtils {
             case STRUCT:
                 value = rowToStructValue(schema,
                                          skeletonTable, skeletonColumnId,
+                                         tableName, tableColumnId,
                                          tags, tagsColumnId,
                                          row);
                 break;
@@ -209,6 +215,7 @@ public class TestUtils {
             // Schemaless JSON, so we need to pass our columns
             value = rowToMap(columns,
                              skeletonTable, skeletonColumnId,
+                             tableName, tableColumnId,
                              tags, tagsColumnId,
                              row);
         }
@@ -225,6 +232,8 @@ public class TestUtils {
     private static Map rowToMap(Column[] columns,
                                 Table skeletonTable,
                                 String skeletonColumnId,
+                                String tableName,
+                                String tableColumnId,
                                 List<String> tags,
                                 String tagsColumnId,
                                 Value[] row) {
@@ -250,6 +259,7 @@ public class TestUtils {
         }
 
         out.put(skeletonColumnId, skeletonTable.getName());
+        out.put(tableColumnId, tableName);
         out.put(tagsColumnId, tags);
 
         return out;
@@ -258,6 +268,8 @@ public class TestUtils {
     public static Struct rowToStructValue(Schema schema,
                                           Table skeletonTable,
                                           String skeletonColumnId,
+                                          String tableName,
+                                          String tableColumnId,
                                           List<String> tags,
                                           String tagsColumnId,
                                           Value[] row) {
@@ -271,6 +283,8 @@ public class TestUtils {
         for(int i = 0; i < fields.length; ++i) {
             if (fields[i].name() == skeletonColumnId) {
                 value.put(skeletonColumnId, skeletonTable.getName());
+            } else if (fields[i].name() == tableColumnId) {
+                value.put(tableColumnId, tableName);
             } else if (fields[i].name() == tagsColumnId) {
                 value.put(tagsColumnId, tags);
             } else {
@@ -341,12 +355,13 @@ public class TestUtils {
      */
     public static Schema columnsToSchema(Schema.Type schemaType,
                                          String skeletonColumnId,
+                                         String tableColumnId,
                                          String tagsColumnId,
                                          Column[] columns) {
         SchemaBuilder builder = new SchemaBuilder(schemaType);
         switch (schemaType) {
         case STRUCT:
-            columnsToStructSchema(builder, skeletonColumnId, tagsColumnId, columns);
+            columnsToStructSchema(builder, skeletonColumnId, tableColumnId, tagsColumnId, columns);
             break;
 
         case STRING:
@@ -364,6 +379,7 @@ public class TestUtils {
      */
     public static void columnsToStructSchema(SchemaBuilder builder,
                                              String skeletonColumnId,
+                                             String tableColumnId,
                                              String tagsColumnId,
                                              Column[] columns) {
         for (Column c : columns) {
@@ -383,6 +399,7 @@ public class TestUtils {
         }
 
         builder.field(skeletonColumnId, SchemaBuilder.string());
+        builder.field(tableColumnId, SchemaBuilder.string());
         builder.field(tagsColumnId, SchemaBuilder.array(Schema.STRING_SCHEMA));
     }
 }

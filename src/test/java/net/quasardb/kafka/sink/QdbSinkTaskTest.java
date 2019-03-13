@@ -250,6 +250,44 @@ public class QdbSinkTaskTest {
     }
 
     /**
+     * Tests that a new table's tags can be set automatically.
+     */
+    @ParameterizedTest
+    @MethodSource("randomRecord")
+    public void testResolveTableFromColumn(Fixture fixture,
+                                           Integer offset,
+                                           Row row,
+                                           SinkRecord record) {
+        Map<String, String> props = fixture.props;
+
+        props.put(ConnectorUtils.TABLE_FROM_COLUMN_CONFIG, Fixture.TABLE_COLUMN_ID);
+        props.put(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG, Fixture.SKELETON_COLUMN_ID);
+
+        this.task.start(props);
+        this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap());
+
+        // Sleep 1 seconds, our flush interval
+        try {
+            Thread.sleep(1100);
+        } catch (Exception e) {
+            throw new Error("Unexpected exception", e);
+        }
+
+        String tableFromColumnName = fixture.tableFromColumnNames[offset];
+
+        Timespec ts = new Timespec(record.timestamp());
+        TimeRange[] ranges = { new TimeRange(ts, ts.plusNanos(1)) };
+        Reader reader = Table.reader(TestUtils.createSession(), tableFromColumnName, ranges);
+        assertEquals(true, reader.hasNext());
+
+
+
+
+        this.task.stop();
+    }
+
+    /**
      * Parameter provider for random schemas
      */
     static Stream<Arguments> randomSchemaWithValue() throws IOException {

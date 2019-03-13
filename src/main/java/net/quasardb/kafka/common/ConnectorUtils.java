@@ -77,19 +77,19 @@ public class ConnectorUtils {
     }
 
     public static Resolver<String> createTableResolver(Map <String, Object> validatedProps) {
-        if (validatedProps.containsKey(TABLE_CONFIG) &&
-            validatedProps.get(TABLE_CONFIG) != null) {
-            log.debug(TABLE_CONFIG + " provided, using StaticTableResolver");
-            return new StaticResolver<String>((String)validatedProps.get(TABLE_CONFIG));
+        if (validatedProps.containsKey(TABLE_FROM_COLUMN_CONFIG) &&
+            validatedProps.get(TABLE_FROM_COLUMN_CONFIG) != null) {
+            log.debug(TABLE_FROM_COLUMN_CONFIG + " set to true, using ColumnResolver");
+            return new ColumnResolver<String>((String)validatedProps.get(TABLE_FROM_COLUMN_CONFIG));
         } else if (validatedProps.containsKey(TABLE_FROM_TOPIC_CONFIG) &&
                    (Boolean)validatedProps.get(TABLE_FROM_TOPIC_CONFIG) == Boolean.TRUE) {
             log.debug(TABLE_FROM_TOPIC_CONFIG + " set to true, using TopicResolver");
             return new TopicResolver();
-        } else if (validatedProps.containsKey(TABLE_FROM_COLUMN_CONFIG) &&
-                   (Boolean)validatedProps.get(TABLE_FROM_COLUMN_CONFIG) == Boolean.TRUE) {
-            log.debug(TABLE_FROM_COLUMN_CONFIG + " set to true, using ColumnResolver");
-            return new ColumnResolver<String>((String)validatedProps.get(TABLE_FROM_COLUMN_CONFIG));
-        } else {
+        } else if (validatedProps.containsKey(TABLE_CONFIG) &&
+                   validatedProps.get(TABLE_CONFIG) != null) {
+            log.debug(TABLE_CONFIG + " provided, using StaticTableResolver");
+            return new StaticResolver<String>((String)validatedProps.get(TABLE_CONFIG));
+        } else  {
             log.debug("validatedProps: " + validatedProps.toString());
             throw new DataException("No valid TableResolving strategy could be determined, please correct your configuration");
         }
