@@ -78,6 +78,10 @@ public class RecordConverter {
                     return Value.createDouble((Double)value);
                 }
 
+                if (value instanceof Long) {
+                    return Value.createDouble(((Long)value).doubleValue());
+                }
+
                 log.warn("Ignoring double column '" + qdbColumn.getName () + "': expected Double value, got: " + value.getClass());
                 return Value.createNull();
             case BLOB:
@@ -120,6 +124,10 @@ public class RecordConverter {
             case DOUBLE:
                 if (value instanceof Double) {
                     return Value.createDouble((Double)value);
+                }
+
+                if (value instanceof Long) {
+                    return Value.createDouble(((Long)value).doubleValue());
                 }
 
                 log.warn("Ignoring double column '" + qdbColumn.getName () + "': expected Double value, got: " + value.getClass());
