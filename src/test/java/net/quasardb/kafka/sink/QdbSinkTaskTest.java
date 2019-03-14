@@ -26,6 +26,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
+import org.apache.kafka.common.record.TimestampType;
 
 import org.apache.kafka.connect.errors.DataException;
 
@@ -104,6 +105,8 @@ public class QdbSinkTaskTest {
 
         this.task.start(props);
         this.task.put(records);
+        this.task.flush(new HashMap<>());
+
         this.task.stop();
     }
 
@@ -328,9 +331,82 @@ public class QdbSinkTaskTest {
         assertEquals(true, reader.hasNext());
 
 
+        this.task.stop();
+    }
 
+
+    /**
+     * Tests that a table can insert a single column/value pair
+     */
+    @ParameterizedTest
+    @MethodSource("noSchema")
+    public void testInsertSingleColumnValue(Fixture fixture) {
+        Map<String, String> props = fixture.props;
+
+        String tableName = TestUtils.createUniqueAlias();
+        Column[] columns = new Column[] {
+            new Column.Double("bar.foo"),
+            new Column.Double("foo.bar"),
+            new Column.Double("wom.bat")
+        };
+        Table t = Table.create(TestUtils.createSession(), tableName, columns);
+
+        props.put(ConnectorUtils.TABLE_CONFIG, tableName);
+
+        // Hack, but we're abusing our composite table name for a composite column name here. This means we should
+        // end up with a single table that has only a single column with a certain value.
+        String columnNameDelim   = ".";
+        String[] columnNameParts = {"col1", "col2"};
+
+        Map value = new HashMap<String, Object> ();
+        value.put("col1", "foo");
+        value.put("col2", "bar");
+        value.put("value", 12.34);
+
+        Schema schema = null;
+
+        Timespec time = Timespec.now();
+        SinkRecord record = new SinkRecord("notopic", 1,
+                                           null, null,    // key is unused
+                                           schema, value,
+                                           -1,            // kafkaOffset
+                                           time.toEpochMillis(), TimestampType.CREATE_TIME);
+
+        props.put(ConnectorUtils.COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG, String.join(",", columnNameParts));
+        props.put(ConnectorUtils.COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG, columnNameDelim);
+        props.put(ConnectorUtils.VALUE_COLUMN_CONFIG, "value");
+
+        this.task.start(props);
+        this.task.put(Collections.singletonList(record));
+        this.task.flush(new HashMap());
+
+        // Sleep 1 seconds, our flush interval
+        try {
+            Thread.sleep(1100);
+        } catch (Exception e) {
+            throw new Error("Unexpected exception", e);
+        }
+
+        TimeRange[] ranges = { new TimeRange(time.minusSeconds(15), time.plusSeconds(15)) };
+        Reader reader = Table.reader(TestUtils.createSession(), tableName, ranges);
+        assertEquals(true, reader.hasNext());
+
+
+        Row row = reader.next();
+
+        assertEquals(row.getValues().length, 3);
+        assertEquals(row.getValues()[1].getDouble(), 12.34);
 
         this.task.stop();
+    }
+
+
+
+    /**
+     * Parameter provider tests without schema
+     */
+    static Stream<Arguments> noSchema() throws IOException {
+        return Stream.of(Arguments.of(Fixture.of(TestUtils.createSession())));
     }
 
     /**

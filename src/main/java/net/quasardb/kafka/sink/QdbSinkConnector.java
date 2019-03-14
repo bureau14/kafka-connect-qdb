@@ -95,7 +95,7 @@ public class QdbSinkConnector extends SinkConnector {
                     Type.STRING,
                     null,
                     Importance.MEDIUM,
-                    "Optional identifier to use for joining columns into a single table name.")
+                    "Optional delimiter to use for joining columns into a single table name.")
             .define(ConnectorUtils.TABLE_AUTOCREATE_CONFIG,
                     Type.BOOLEAN,
                     false,
@@ -126,6 +126,31 @@ public class QdbSinkConnector extends SinkConnector {
                     null,
                     Importance.MEDIUM,
                     "Allows providing of a column which will be used to assign additional tags to newly created tables.")
+            .define(ConnectorUtils.COLUMN_FROM_COLUMN_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "For single column/value insertions: identifier of the column to acquire column name from. Cannot be used in combination with qdb.column_from_columns")
+            .define(ConnectorUtils.COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG,
+                    Type.LIST,
+                    null,
+                    Importance.MEDIUM,
+                    "For single column/value insertions: odentifier of the columns to acquire column name from, joins strings of columns into a column name. Cannot be used in combination with qdb.column_from_column.")
+            .define(ConnectorUtils.COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "Optional delimiter to use for joining columns into a single column name.")
+            .define(ConnectorUtils.VALUE_COLUMN_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "For single column/value insertions: identifier of the column to acquire value from. For example, if set to 'value', the Kafka connector will always look in the column 'value' to find out which value to store.")
+            .define(ConnectorUtils.VALUE_FROM_COLUMN_CONFIG,
+                    Type.STRING,
+                    null,
+                    Importance.MEDIUM,
+                    "For single column/value insertions: identifier of the column to use as column identifier to acquire value from. For example, if set to 'thecol', the Kafka connector will look up the value of 'thecol', and use that value to retrieve the value, i.e. it allows an additional indirection.")
             ;
     }
 

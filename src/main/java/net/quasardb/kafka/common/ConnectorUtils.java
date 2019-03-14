@@ -17,6 +17,9 @@ import net.quasardb.kafka.common.resolver.StaticResolver;
 import net.quasardb.kafka.common.resolver.StringColumnResolver;
 import net.quasardb.kafka.common.resolver.ListColumnResolver;
 import net.quasardb.kafka.common.resolver.ColumnsResolver;
+import net.quasardb.kafka.common.writer.RecordWriter;
+import net.quasardb.kafka.common.writer.RowRecordWriter;
+import net.quasardb.kafka.common.writer.ColumnRecordWriter;
 
 public class ConnectorUtils {
 
@@ -26,17 +29,28 @@ public class ConnectorUtils {
     public static final String SECURITY_USERNAME_CONFIG = "qdb.security.username";
     public static final String SECURITY_USER_PRIVATE_KEY_CONFIG = "qdb.security.user_private_key";
     public static final String SECURITY_CLUSTER_PUBLIC_KEY_CONFIG = "qdb.security.cluster_public_key";
+
     public static final String TABLE_CONFIG = "qdb.table";
     public static final String TABLE_FROM_TOPIC_CONFIG = "qdb.table_from_topic";
     public static final String TABLE_FROM_COLUMN_CONFIG = "qdb.table_from_column";
     public static final String TABLE_FROM_COMPOSITE_COLUMNS_CONFIG = "qdb.table_from_columns";
     public static final String TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG = "qdb.table_from_columns_delimiter";
+
     public static final String TABLE_AUTOCREATE_CONFIG = "qdb.table_autocreate";
     public static final String TABLE_AUTOCREATE_TAGS_CONFIG = "qdb.table_autocreate_tags";
     public static final String TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG = "qdb.table_autocreate_tags_column";
     public static final String TABLE_AUTOCREATE_SKELETON_CONFIG = "qdb.table_autocreate_skeleton";
     public static final String TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG = "qdb.table_autocreate_skeleton_column";
     public static final String TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG = "qdb.table_autocreate_skeleton_suffix";
+
+    public static final String TIMESTAMP_FROM_COLUMN_CONFIG = "qdb.timestamp_from_column";
+    public static final String TIMESTAMP_FROM_COLUMN_FORMAT_CONFIG = "qdb.timestamp_from_column_format";
+
+    public static final String COLUMN_FROM_COLUMN_CONFIG = "qdb.column_from_column";
+    public static final String COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG = "qdb.column_from_columns";
+    public static final String COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG = "qdb.column_from_columns_delimiter";
+    public static final String VALUE_COLUMN_CONFIG = "qdb.value_column";
+    public static final String VALUE_FROM_COLUMN_CONFIG = "qdb.value_from_column";
 
 
     /**
@@ -153,6 +167,49 @@ public class ConnectorUtils {
         } else {
             log.debug("No table tags configuration");
             return null;
+        }
+    }
+
+    public static RecordWriter createRecordWriter(Map <String, Object> validatedProps) {
+        if ((validatedProps.containsKey(COLUMN_FROM_COLUMN_CONFIG) && validatedProps.get(COLUMN_FROM_COLUMN_CONFIG) != null)
+            || (validatedProps.containsKey(COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG) && validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG) != null)
+            || (validatedProps.containsKey(VALUE_COLUMN_CONFIG) && validatedProps.get(VALUE_FROM_COLUMN_CONFIG) != null)
+            || (validatedProps.containsKey(VALUE_FROM_COLUMN_CONFIG) && validatedProps.get(VALUE_FROM_COLUMN_CONFIG) != null)) {
+            log.debug("enabling column value resolver");
+
+            Resolver<String> columnResolver;
+
+            if (validatedProps.containsKey(COLUMN_FROM_COLUMN_CONFIG) && validatedProps.get(COLUMN_FROM_COLUMN_CONFIG) != null) {
+                columnResolver = new StringColumnResolver((String)validatedProps.get(COLUMN_FROM_COLUMN_CONFIG));
+            } else if (validatedProps.containsKey(COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG) && validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG) != null) {
+                List<String> columns = (List<String>)validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG);
+                if (validatedProps.containsKey(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) &&
+                    validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) != null) {
+                    log.debug(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " set, using a delimiter");
+                    columnResolver = new ColumnsResolver(columns,
+                                                         (String)validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG));
+                } else {
+                    log.debug(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " not set, not using a delimiter");
+                    columnResolver = new ColumnsResolver(columns);
+                }
+            } else {
+                log.error("Unable to determine a column resolver for column value resolver");
+                return null;
+            }
+
+            Resolver<String> valueResolver;
+            if (validatedProps.containsKey(VALUE_COLUMN_CONFIG) && validatedProps.get(VALUE_COLUMN_CONFIG) != null) {
+                valueResolver = new StaticResolver<String>((String)validatedProps.get(VALUE_COLUMN_CONFIG));
+            } else if (validatedProps.containsKey(VALUE_FROM_COLUMN_CONFIG) && validatedProps.get(VALUE_FROM_COLUMN_CONFIG) != null) {
+                valueResolver = new StringColumnResolver((String)validatedProps.get(VALUE_FROM_COLUMN_CONFIG));
+            } else {
+                log.error("Unable to determine a value resolver for column value resolver");
+                return null;
+            }
+
+            return new ColumnRecordWriter(columnResolver, valueResolver);
+        } else {
+            return new RowRecordWriter();
         }
     }
 }

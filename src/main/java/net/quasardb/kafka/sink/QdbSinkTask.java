@@ -24,8 +24,6 @@ import net.quasardb.qdb.Session;
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Tables;
-import net.quasardb.qdb.ts.Timespec;
-import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Writer;
 
 import net.quasardb.kafka.common.ConnectorUtils;
@@ -33,6 +31,8 @@ import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.TableRegistry;
 import net.quasardb.kafka.common.RecordConverter;
 import net.quasardb.kafka.common.resolver.Resolver;
+import net.quasardb.kafka.common.writer.RecordWriter;
+import net.quasardb.kafka.common.writer.RowRecordWriter;
 
 public class QdbSinkTask extends SinkTask {
 
@@ -42,6 +42,7 @@ public class QdbSinkTask extends SinkTask {
     private Writer writer;
 
     private TableRegistry tableRegistry;
+    private RecordWriter recordWriter;
     private Resolver<String> tableResolver;
     private Resolver<String> skeletonTableResolver;
     private Resolver<List<String>> tableTagsResolver;
@@ -73,6 +74,7 @@ public class QdbSinkTask extends SinkTask {
         this.tableResolver = ConnectorUtils.createTableResolver(validatedProps);
         this.skeletonTableResolver = ConnectorUtils.createSkeletonTableResolver(validatedProps);
         this.tableTagsResolver = ConnectorUtils.createTableTagsResolver(validatedProps);
+        this.recordWriter = ConnectorUtils.createRecordWriter(validatedProps);
 
         log.info("Started QdbSinkTask");
     }
@@ -156,18 +158,7 @@ public class QdbSinkTask extends SinkTask {
                 t.setOffset(this.writer.tableIndexByName(t.getTable().getName()));
             }
 
-            Value[] row = RecordConverter.convert(t.getTable().getColumns(), s);
-
-            try {
-                Timespec ts = (s.timestamp() == null
-                               ? Timespec.now()
-                               : new Timespec(s.timestamp()));
-                this.writer.append(t.getOffset(), ts, row);
-            } catch (Exception e) {
-                log.error("Unable to write record: " + e.getMessage());
-                log.error("Record: " + s.toString());
-                throw new RuntimeException(e);
-            }
+            this.recordWriter.write(this.writer, t, s);
         }
     }
 
