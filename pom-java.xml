@@ -33,34 +33,34 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <classifier>linux-x86_64</classifier>
       <scope>runtime</scope>
     </dependency>
-    <!-- <dependency> -->
-    <!--   <groupId>net.quasardb</groupId> -->
-    <!--   <artifactId>jni</artifactId> -->
-    <!--   <version>3.2.0-SNAPSHOT</version> -->
-    <!--   <classifier>osx-x86_64</classifier> -->
-    <!--   <scope>runtime</scope> -->
-    <!-- </dependency> -->
-    <!-- <dependency> -->
-    <!--   <groupId>net.quasardb</groupId> -->
-    <!--   <artifactId>jni</artifactId> -->
-    <!--   <version>3.2.0-SNAPSHOT</version> -->
-    <!--   <classifier>freebsd-x86_64</classifier> -->
-    <!--   <scope>runtime</scope> -->
-    <!-- </dependency> -->
-    <!-- <dependency> -->
-    <!--   <groupId>net.quasardb</groupId> -->
-    <!--   <artifactId>jni</artifactId> -->
-    <!--   <version>3.2.0-SNAPSHOT</version> -->
-    <!--   <classifier>windows-x86_64</classifier> -->
-    <!--   <scope>runtime</scope> -->
-    <!-- </dependency> -->
-    <!-- <dependency> -->
-    <!--   <groupId>net.quasardb</groupId> -->
-    <!--   <artifactId>jni</artifactId> -->
-    <!--   <version>3.2.0-SNAPSHOT</version> -->
-    <!--   <classifier>windows-x86_32</classifier> -->
-    <!--   <scope>runtime</scope> -->
-    <!-- </dependency> -->
+    <dependency>
+      <groupId>net.quasardb</groupId>
+      <artifactId>jni</artifactId>
+      <version>3.2.0-SNAPSHOT</version>
+      <classifier>osx-x86_64</classifier>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.quasardb</groupId>
+      <artifactId>jni</artifactId>
+      <version>3.2.0-SNAPSHOT</version>
+      <classifier>freebsd-x86_64</classifier>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.quasardb</groupId>
+      <artifactId>jni</artifactId>
+      <version>3.2.0-SNAPSHOT</version>
+      <classifier>windows-x86_64</classifier>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.quasardb</groupId>
+      <artifactId>jni</artifactId>
+      <version>3.2.0-SNAPSHOT</version>
+      <classifier>windows-x86_32</classifier>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
 
 
