@@ -26,7 +26,7 @@ mvn install:install-file -f pom-jni.xml
 mvn install:install-file -f pom-jni-arch.xml -Darch=linux-x86_64
 
 echo "Building Java"
-mvn package -DskipTests \
+mvn package -DskipTests -Dmaven.javadoc.skip=true \
     && cp -v ./jni/** ../kafka-connect-qdb/jni \
     && cp -v target/qdb-*.jar ../kafka-connect-qdb/java \
     && cd ../kafka-connect-qdb
