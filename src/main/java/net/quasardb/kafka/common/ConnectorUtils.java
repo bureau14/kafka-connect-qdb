@@ -1,25 +1,24 @@
 package net.quasardb.kafka.common;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-
-import org.apache.kafka.connect.errors.DataException;
-
-import net.quasardb.qdb.Session;
+import net.quasardb.kafka.common.resolver.ColumnResolver;
+import net.quasardb.kafka.common.resolver.ColumnsResolver;
+import net.quasardb.kafka.common.resolver.ListColumnResolver;
+import net.quasardb.kafka.common.resolver.LongColumnResolver;
 import net.quasardb.kafka.common.resolver.Resolver;
-import net.quasardb.kafka.common.resolver.TopicResolver;
 import net.quasardb.kafka.common.resolver.StaticResolver;
 import net.quasardb.kafka.common.resolver.StringColumnResolver;
-import net.quasardb.kafka.common.resolver.ListColumnResolver;
-import net.quasardb.kafka.common.resolver.ColumnsResolver;
+import net.quasardb.kafka.common.resolver.TopicResolver;
+import net.quasardb.kafka.common.writer.ColumnRecordWriter;
 import net.quasardb.kafka.common.writer.RecordWriter;
 import net.quasardb.kafka.common.writer.RowRecordWriter;
-import net.quasardb.kafka.common.writer.ColumnRecordWriter;
+import net.quasardb.qdb.Session;
+import org.apache.kafka.connect.errors.DataException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConnectorUtils {
 
@@ -42,6 +41,8 @@ public class ConnectorUtils {
     public static final String TABLE_AUTOCREATE_SKELETON_CONFIG = "qdb.table_autocreate_skeleton";
     public static final String TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG = "qdb.table_autocreate_skeleton_column";
     public static final String TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG = "qdb.table_autocreate_skeleton_suffix";
+    public static final String TABLE_AUTOCREATE_SHARD_SIZE_CONFIG = "qdb.table_autocreate_shard_size";
+    public static final String TABLE_AUTOCREATE_SHARD_SIZE_COLUMN_CONFIG = "qdb.table_autocreate_shard_size_column";
 
     public static final String TIMESTAMP_FROM_COLUMN_CONFIG = "qdb.timestamp_from_column";
     public static final String TIMESTAMP_FROM_COLUMN_FORMAT_CONFIG = "qdb.timestamp_from_column_format";
@@ -94,38 +95,37 @@ public class ConnectorUtils {
             return Session.connect(uri);
         }
     }
-
     public static Resolver<String> createTableResolver(Map <String, Object> validatedProps) {
 
         System.err.println("validatedProps = " + validatedProps.toString());
 
         if (validatedProps.containsKey(TABLE_FROM_COLUMN_CONFIG) &&
             validatedProps.get(TABLE_FROM_COLUMN_CONFIG) != null) {
-            log.debug(TABLE_FROM_COLUMN_CONFIG + " set, using ColumnResolver");
+            log.debug("{} set, using ColumnResolver",TABLE_FROM_COLUMN_CONFIG);
             return new StringColumnResolver((String)validatedProps.get(TABLE_FROM_COLUMN_CONFIG));
         } else if (validatedProps.containsKey(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG) &&
                    validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG) != null) {
-            log.debug(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG + " set, using ColumnsResolver");
+            log.debug("{} set, using ColumnsResolver",TABLE_FROM_COMPOSITE_COLUMNS_CONFIG);
             List<String> columns = (List<String>)validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_CONFIG);
             if (validatedProps.containsKey(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) &&
                 validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) != null) {
-                log.debug(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " set, using a delimiter");
+                log.debug("{} set, using a delimiter",TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG);
                 return new ColumnsResolver(columns,
                                            (String)validatedProps.get(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG));
             } else {
-                log.debug(TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " not set, not using a delimiter");
+                log.debug("{} not set, not using a delimiter", TABLE_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG);
                 return new ColumnsResolver(columns);
             }
         } else if (validatedProps.containsKey(TABLE_FROM_TOPIC_CONFIG) &&
                    (Boolean)validatedProps.get(TABLE_FROM_TOPIC_CONFIG) == Boolean.TRUE) {
-            log.debug(TABLE_FROM_TOPIC_CONFIG + " set to true, using TopicResolver");
+            log.debug("{} set to true, using TopicResolver",TABLE_FROM_TOPIC_CONFIG);
             return new TopicResolver();
         } else if (validatedProps.containsKey(TABLE_CONFIG) &&
                    validatedProps.get(TABLE_CONFIG) != null) {
-            log.debug(TABLE_CONFIG + " provided, using StaticTableResolver");
+            log.debug("{} provided, using StaticTableResolver",TABLE_CONFIG);
             return new StaticResolver<String>((String)validatedProps.get(TABLE_CONFIG));
         } else  {
-            log.debug("validatedProps: " + validatedProps.toString());
+            log.debug("validatedProps: {}", validatedProps);
             throw new DataException("No valid TableResolving strategy could be determined, please correct your configuration");
         }
     }
@@ -133,19 +133,19 @@ public class ConnectorUtils {
     public static Resolver<String> createSkeletonTableResolver(Map <String, Object> validatedProps) {
         if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_CONFIG) &&
             validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_SKELETON_CONFIG + " provided");
+            log.debug("{} provided",TABLE_AUTOCREATE_SKELETON_CONFIG);
             return new StaticResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_CONFIG));
         } else if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG) &&
                    validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG + " provided");
+            log.debug("{} provided",TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG);
 
             if (validatedProps.containsKey(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG) &&
                 validatedProps.get(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG) != null) {
-                log.debug(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG + " provided");
+                log.debug( "{} provided",TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG);
                 return new StringColumnResolver((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG),
                                                 (String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG));
             } else {
-                log.debug(TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG + " not provided");
+                log.debug("{} not provided",TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG);
                 return new StringColumnResolver((String)validatedProps.get(TABLE_AUTOCREATE_SKELETON_COLUMN_CONFIG));
             }
 
@@ -158,14 +158,29 @@ public class ConnectorUtils {
     public static Resolver<List<String>> createTableTagsResolver(Map <String, Object> validatedProps) {
         if (validatedProps.containsKey(TABLE_AUTOCREATE_TAGS_CONFIG) &&
             validatedProps.get(TABLE_AUTOCREATE_TAGS_CONFIG) != null) {
-            log.debug(TABLE_AUTOCREATE_TAGS_CONFIG + " provided, using StaticResolver");
-            return new StaticResolver<List<String>>((List<String>)validatedProps.get(TABLE_AUTOCREATE_TAGS_CONFIG));
+            log.debug("{} provided, using StaticResolver",TABLE_AUTOCREATE_TAGS_CONFIG);
+            return new StaticResolver<>((List<String>)validatedProps.get(TABLE_AUTOCREATE_TAGS_CONFIG));
         } else if (validatedProps.containsKey(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG) &&
                    validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG) != null) {
             log.debug(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG + " provided, using ColumnResolver");
             return new ListColumnResolver<String>((String)validatedProps.get(TABLE_AUTOCREATE_TAGS_COLUMN_CONFIG));
         } else {
             log.debug("No table tags configuration");
+            return null;
+        }
+    }
+
+    public static Resolver<Long> createShardSizeResolver(Map <String, Object> validatedProps) {
+        if (validatedProps.containsKey(TABLE_AUTOCREATE_SHARD_SIZE_CONFIG) &&
+            validatedProps.get(TABLE_AUTOCREATE_SHARD_SIZE_CONFIG) != null) {
+            log.debug("{} provided, using StaticResolver",TABLE_AUTOCREATE_SHARD_SIZE_CONFIG);
+            return new StaticResolver<>((Long)validatedProps.get(TABLE_AUTOCREATE_SHARD_SIZE_CONFIG));
+        } else if (validatedProps.containsKey(TABLE_AUTOCREATE_SHARD_SIZE_COLUMN_CONFIG) &&
+            validatedProps.get(TABLE_AUTOCREATE_SHARD_SIZE_COLUMN_CONFIG) != null) {
+            log.debug("{} provided, using ColumnResolver", TABLE_AUTOCREATE_SHARD_SIZE_COLUMN_CONFIG);
+            return new LongColumnResolver((String)validatedProps.get(TABLE_AUTOCREATE_SHARD_SIZE_COLUMN_CONFIG));
+        } else {
+            log.debug("No table shard size configuration");
             return null;
         }
     }
@@ -185,11 +200,11 @@ public class ConnectorUtils {
                 List<String> columns = (List<String>)validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_CONFIG);
                 if (validatedProps.containsKey(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) &&
                     validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG) != null) {
-                    log.debug(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " set, using a delimiter");
+                    log.debug("{} set, using a delimiter",COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG);
                     columnResolver = new ColumnsResolver(columns,
                                                          (String)validatedProps.get(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG));
                 } else {
-                    log.debug(COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG + " not set, not using a delimiter");
+                    log.debug("{} not set, not using a delimiter",COLUMN_FROM_COMPOSITE_COLUMNS_DELIM_CONFIG);
                     columnResolver = new ColumnsResolver(columns);
                 }
             } else {

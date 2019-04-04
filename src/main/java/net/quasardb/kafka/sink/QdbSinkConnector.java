@@ -4,18 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import net.quasardb.kafka.common.ConnectorUtils;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
-
-import net.quasardb.kafka.common.ConnectorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QdbSinkConnector extends SinkConnector {
 
@@ -111,6 +108,16 @@ public class QdbSinkConnector extends SinkConnector {
                     null,
                     Importance.MEDIUM,
                     "Allows providing of a column which will be used to look up a dynamic 'skeleton' table whose schema will be copied into autocreated tables.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_SHARD_SIZE_CONFIG,
+                Type.LONG,
+                null,
+                Importance.MEDIUM,
+                "Allows providing of a static 'shardsize' which will be used for all autocreated tables.")
+            .define(ConnectorUtils.TABLE_AUTOCREATE_SHARD_SIZE_COLUMN_CONFIG,
+                Type.LONG,
+                null,
+                Importance.MEDIUM,
+                "Allows providing of a column which will be used to look up a dynamic 'shardsize' which will be used for all autocreated tables.")
             .define(ConnectorUtils.TABLE_AUTOCREATE_SKELETON_SUFFIX_CONFIG,
                     Type.STRING,
                     null,

@@ -1,19 +1,17 @@
 package net.quasardb.kafka.common.resolver;
 
-import java.util.Map;
 import java.util.List;
-
+import java.util.Map;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.errors.DataException;
+import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.sink.SinkRecord;
-import org.apache.kafka.connect.errors.DataException;
-
 public class ColumnsResolver extends Resolver<String> {
 
-    private static final Logger log = LoggerFactory.getLogger(ColumnResolver.class);
+    private static final Logger log = LoggerFactory.getLogger(ColumnsResolver.class);
     private String[] columnNames;
     private String delim;
 

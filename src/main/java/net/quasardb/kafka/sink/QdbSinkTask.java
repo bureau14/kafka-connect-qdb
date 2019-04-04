@@ -1,38 +1,24 @@
 package net.quasardb.kafka.sink;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.connect.connector.ConnectRecord;
-import org.apache.kafka.connect.data.Field;
-import org.apache.kafka.connect.errors.DataException;
-import org.apache.kafka.connect.sink.SinkRecord;
-import org.apache.kafka.connect.sink.SinkTask;
-import org.apache.kafka.connect.errors.DataException;
-
-import net.quasardb.qdb.Session;
-import net.quasardb.qdb.ts.Column;
-import net.quasardb.qdb.ts.Table;
-import net.quasardb.qdb.ts.Tables;
-import net.quasardb.qdb.ts.Writer;
-
 import net.quasardb.kafka.common.ConnectorUtils;
 import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.TableRegistry;
-import net.quasardb.kafka.common.RecordConverter;
 import net.quasardb.kafka.common.resolver.Resolver;
 import net.quasardb.kafka.common.writer.RecordWriter;
-import net.quasardb.kafka.common.writer.RowRecordWriter;
+import net.quasardb.qdb.Session;
+import net.quasardb.qdb.ts.Table;
+import net.quasardb.qdb.ts.Writer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.connect.errors.DataException;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.apache.kafka.connect.sink.SinkTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public class QdbSinkTask extends SinkTask {
 
@@ -46,6 +32,7 @@ public class QdbSinkTask extends SinkTask {
     private Resolver<String> tableResolver;
     private Resolver<String> skeletonTableResolver;
     private Resolver<List<String>> tableTagsResolver;
+    private Resolver<Long> tableShardSizeResolver;
 
     /**
      * Always use no-arg constructor, #start will initialize the task.
@@ -68,12 +55,12 @@ public class QdbSinkTask extends SinkTask {
 
         Map<String, Object> validatedProps = new QdbSinkConnector().config().parse(props);
 
-        this.session =
-            ConnectorUtils.connect(validatedProps);
+        this.session = ConnectorUtils.connect(validatedProps);
 
         this.tableResolver = ConnectorUtils.createTableResolver(validatedProps);
         this.skeletonTableResolver = ConnectorUtils.createSkeletonTableResolver(validatedProps);
         this.tableTagsResolver = ConnectorUtils.createTableTagsResolver(validatedProps);
+        this.tableShardSizeResolver = ConnectorUtils.createShardSizeResolver(validatedProps);
         this.recordWriter = ConnectorUtils.createRecordWriter(validatedProps);
 
         log.info("Started QdbSinkTask");
@@ -109,16 +96,22 @@ public class QdbSinkTask extends SinkTask {
         }
 
         Table skeleton = new Table(this.session, this.skeletonTableResolver.resolve(record));
-        log.info("creating copy of skeleton table '" + skeleton.getName() + "' into target table '" + tableName + "'");
-        Table newTable = Table.create(this.session, tableName, skeleton);
-
+        log.info("creating copy of skeleton table '{}' into target table '{}'", skeleton.getName(), tableName);
+        Table table;
+        if (tableShardSizeResolver == null) {
+            table = Table.create(this.session, tableName, skeleton);
+        } else {
+            Long shardsize = this.tableShardSizeResolver.resolve(record);
+            log.debug("using shard size {} for table {}", shardsize, tableName);
+            table = Table.create(this.session, tableName, skeleton, shardsize);
+        }
         if (this.tableTagsResolver != null) {
             List<String> tags = this.tableTagsResolver.resolve(record);
-            log.debug("attaching tags " + tags.toString() + " to table " + tableName);
+            log.debug("attaching tags {} to table {}", tags, tableName);
             Table.attachTags(this.session, tableName, tags);
         }
 
-        return newTable;
+        return table;
     }
 
     private TableInfo addTableToRegistry(String tableName, SinkRecord record) throws DataException {
@@ -126,7 +119,7 @@ public class QdbSinkTask extends SinkTask {
             throw new DataException("Invalid table name provided: " + tableName);
         }
 
-        log.info("Adding table to registry: " + tableName);
+        log.info("Adding table to registry: {}", tableName);
 
         TableInfo t = this.tableRegistry.put(this.session, tableName);
         if (t == null) {
