@@ -8,18 +8,21 @@ echo "Cleaning java"
 rm -rf java \
    && mkdir java
 
+
 echo "Rebuilding JNI..."
-cd ../qdb-api-java \
-    && rm -rf jni \
+rm -rf jni \
     && mkdir jni \
     && cd ../qdb-api-jni/ \
-    && rm -rf ./build \
-    && mkdir build \
+    && mvn compile \
+    && rm -rf build \
+    && mkdir build  \
     && cd build \
-    && cmake .. \
-    && make -j32 \
-    && cp -v ./jni* ../../qdb-api-java/jni/ \
-    && cd ../../qdb-api-java
+    && cmake -G Ninja .. \
+    && cmake --build . \
+    && cd .. \
+    && mvn install \
+    && cp target/jni* ../qdb-api-java/jni/ \
+    && cd ../qdb-api-java
 
 echo "Installing JNI"
 mvn install:install-file -f pom-jni.xml
