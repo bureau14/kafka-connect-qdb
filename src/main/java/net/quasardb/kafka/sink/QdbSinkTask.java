@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -37,7 +36,7 @@ import net.quasardb.kafka.common.writer.RowRecordWriter;
 
 public class QdbSinkTask extends SinkTask {
 
-    private static final Logger log = LoggerFactory.getLogger(QdbSinkTask.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(QdbSinkTask.class);
 
     private Session session;
     private Writer writer;

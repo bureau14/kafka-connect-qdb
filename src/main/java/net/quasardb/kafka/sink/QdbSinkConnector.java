@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.kafka.common.config.ConfigDef;
@@ -15,13 +14,14 @@ import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
 
+import net.quasardb.qdb.Logger;
 import net.quasardb.kafka.common.ConnectorUtils;
 
 public class QdbSinkConnector extends SinkConnector {
 
     public static final String DEFAULT_CLUSTER_URI = "qdb://127.0.0.1:2836";
 
-    private static final Logger log = LoggerFactory.getLogger(QdbSinkConnector.class);
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(QdbSinkConnector.class);
     private Map<String, String> props;
 
     @Override
