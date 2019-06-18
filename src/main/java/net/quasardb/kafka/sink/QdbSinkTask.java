@@ -37,6 +37,7 @@ import net.quasardb.kafka.common.writer.RowRecordWriter;
 public class QdbSinkTask extends SinkTask {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(QdbSinkTask.class);
+    private static Session _keepAlive = new Session();
 
     private Session session;
     private Writer writer;
