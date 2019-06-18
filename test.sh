@@ -25,7 +25,7 @@ rm -rf jni \
     && cd ../qdb-api-java
 
 echo "Installing JNI"
-mvn install:install-file -f pom-jni.xml
+#mvn install:install-file -f pom-jni.xml
 mvn install:install-file -f pom-jni-arch.xml -Darch=linux-x86_64
 
 echo "Building Java"
