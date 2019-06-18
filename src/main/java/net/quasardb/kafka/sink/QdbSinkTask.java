@@ -20,6 +20,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.apache.kafka.connect.errors.DataException;
 
+import net.quasardb.qdb.Logger;
 import net.quasardb.qdb.Session;
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Table;
