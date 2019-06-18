@@ -30,6 +30,7 @@ import org.apache.kafka.common.record.TimestampType;
 
 import org.apache.kafka.connect.errors.DataException;
 
+import net.quasardb.qdb.Logger;
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Reader;
 import net.quasardb.qdb.ts.Row;
