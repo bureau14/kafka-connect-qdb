@@ -31,7 +31,7 @@ import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Table;
 
 public class TestUtils {
-    public static final String CLUSTER_URI = "qdb://127.0.0.1:28361";
+    public static final String CLUSTER_URI = "qdb://127.0.0.1:28362";
     public static final String SECURITY_USERNAME = "qdb-kafka-connector";
     public static final String SECURITY_USER_PRIVATE_KEY = "SoHHpH26NtZvfq5pqm/8BXKbVIkf+yYiVZ5fQbq1nbcI=";
     public static final String SECURITY_CLUSTER_PUBLIC_KEY = "Pb+d1o3HuFtxEb5uTl9peU89ze9BZTK9f8KdKr4k7zGA=";
