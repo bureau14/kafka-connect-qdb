@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonEncoding;
 
 import net.quasardb.qdb.ts.Column;
-import net.quasardb.qdb.ts.Row;
+import net.quasardb.qdb.ts.WritableRow;
 import net.quasardb.qdb.ts.Value;
 import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Table;
@@ -101,7 +101,7 @@ public class TestUtils {
     /**
      * Generate table rows with standard complexity of 32
      */
-    public static Row[] generateTableRows(Column[] cols, int count) {
+    public static WritableRow[] generateTableRows(Column[] cols, int count) {
         return generateTableRows(cols, 32, count);
     }
 
@@ -113,7 +113,7 @@ public class TestUtils {
      *                   E.g. for blobs, this denotes the size of the blob value being
      *                   generated.
      */
-    public static Row[] generateTableRows(Column[] cols, int complexity, int count) {
+    public static WritableRow[] generateTableRows(Column[] cols, int complexity, int count) {
         // Generate that returns entire rows with an appropriate value for each column.
         Supplier<Value[]> valueGen =
             (() ->
@@ -135,11 +135,11 @@ public class TestUtils {
                                  //
                                  // Adding one second to each row ensure each row has a
                                  // unique ts
-                                 (v, i) -> new Row(new Timespec(Instant.now().toEpochMilli()).plusSeconds(i),
+                                 (v, i) -> new WritableRow(new Timespec(Instant.now().toEpochMilli()).plusSeconds(i),
 
-                                                   v))
+                                                           v))
             .limit(count)
-            .toArray(Row[]::new);
+            .toArray(WritableRow[]::new);
     }
 
     public static String randomString() {
@@ -184,7 +184,7 @@ public class TestUtils {
                                          List<String> tags,
                                          String tagsColumnId,
                                          Column[] columns,
-                                         Row row) throws IOException  {
+                                         WritableRow row) throws IOException  {
         return rowToRecord(topic, partition,
                            skeletonTable, skeletonColumnId,
                            tableName, tableColumnId,

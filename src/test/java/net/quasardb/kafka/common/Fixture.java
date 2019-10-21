@@ -13,7 +13,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 
 import net.quasardb.qdb.Session;
 import net.quasardb.qdb.ts.Column;
-import net.quasardb.qdb.ts.Row;
+import net.quasardb.qdb.ts.WritableRow;
 import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Value;
 
@@ -31,7 +31,7 @@ public class Fixture implements Cloneable {
                                                  Value.Type.BLOB };
 
     public Column[][]          columns;
-    public Row[][]             rows;
+    public WritableRow[][]     rows;
     public Table[]             tables;
     public String[]            tableFromColumnName;
     public String[][]          tableCompositeColumnParts;
@@ -43,7 +43,7 @@ public class Fixture implements Cloneable {
 
     public Fixture() {
         this.columns                    = new Column[NUM_TABLES][];
-        this.rows                       = new Row[NUM_TABLES][];
+        this.rows                       = new WritableRow[NUM_TABLES][];
         this.tables                     = new Table[NUM_TABLES];
         this.tableFromColumnName        = new String[NUM_TABLES];
         this.tableCompositeColumnParts  = new String[NUM_TABLES][];
