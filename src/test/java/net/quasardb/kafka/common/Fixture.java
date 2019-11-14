@@ -25,7 +25,7 @@ public class Fixture implements Cloneable {
     public static final String   TAGS_COLUMN_ID              = "table_tags";
 
     private static final int     NUM_TABLES  = 1;
-    private static final int     NUM_ROWS    = 100;
+    private static final int     NUM_ROWS    = 25;
     private static Value.Type[]  VALUE_TYPES = { Value.Type.INT64,
                                                  Value.Type.DOUBLE,
                                                  Value.Type.BLOB };
