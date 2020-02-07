@@ -91,7 +91,9 @@ public class TestUtils {
         case TIMESTAMP:
             return Value.createTimestamp(randomTimestamp());
         case BLOB:
-            return Value.createSafeString(randomString());
+            return Value.createSafeBlob(randomString().getBytes());
+        case STRING:
+            return Value.createString(randomString());
         }
 
         return Value.createNull();

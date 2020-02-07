@@ -132,13 +132,25 @@ public class RecordConverter {
 
                 log.warn("Ignoring double column '" + qdbColumn.getName () + "': expected Double value, got: " + value.getClass());
                 return Value.createNull();
+
             case BLOB:
+                // Store string as blob, Kafka always provides Strings
                 if (value instanceof String) {
-                    return Value.createSafeString((String)value);
+                    return Value.createSafeBlob(((String)value).getBytes());
                 }
 
                 log.warn("Ignoring blob column '" + qdbColumn.getName () + "': expected String value, got: " + value.getClass());
                 return Value.createNull();
+
+            case STRING:
+                // Store string as string
+                if (value instanceof String) {
+                    return Value.createString((String)value);
+                }
+
+                log.warn("Ignoring blob column '" + qdbColumn.getName () + "': expected String value, got: " + value.getClass());
+                return Value.createNull();
+
             }
         }
 
