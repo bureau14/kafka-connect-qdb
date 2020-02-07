@@ -1,12 +1,15 @@
 package net.quasardb.kafka.common;
 
 import java.util.*;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.stream.Stream;
 import com.google.common.collect.Streams;
 import java.util.function.Supplier;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.Writer;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -20,6 +23,8 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.errors.DataException;
 import net.quasardb.qdb.Session;
 
+import org.json.JSONObject;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonEncoding;
@@ -31,19 +36,44 @@ import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Table;
 
 public class TestUtils {
-    public static final String CLUSTER_URI = "qdb://127.0.0.1:28362";
-    public static final String SECURITY_USERNAME = "qdb-kafka-connector";
-    public static final String SECURITY_USER_PRIVATE_KEY = "SoHHpH26NtZvfq5pqm/8BXKbVIkf+yYiVZ5fQbq1nbcI=";
-    public static final String SECURITY_CLUSTER_PUBLIC_KEY = "Pb+d1o3HuFtxEb5uTl9peU89ze9BZTK9f8KdKr4k7zGA=";
+    public static final String CLUSTER_URI = "qdb://127.0.0.1:2838";
+
+    public static String getUserProperty(String property) {
+        String value = "";
+        try {
+            String user_file_content = new String(Files.readAllBytes(Paths.get("user_private.key")));
+            JSONObject user = new JSONObject(user_file_content);
+            value = user.get(property).toString();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return value;
+    }
+    public static String getClusterPublicKey() {
+        String value = "";
+        try {
+            value = new String(Files.readAllBytes(Paths.get("cluster_public.key")));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return value;
+    }
+    public static final String SECURITY_USERNAME = getUserProperty("username");
+    public static final String SECURITY_USER_PRIVATE_KEY = getUserProperty("secret_key");
+    public static final String SECURITY_CLUSTER_PUBLIC_KEY = getClusterPublicKey();
 
     private static long n = 1;
     private static JsonFactory jsonFactory = new JsonFactory();
 
     public static Session createSession() {
         return Session.connect(new Session.SecurityOptions(SECURITY_USERNAME,
-                                                           SECURITY_USER_PRIVATE_KEY,
-                                                           SECURITY_CLUSTER_PUBLIC_KEY),
-                               CLUSTER_URI);
+                                                            SECURITY_USER_PRIVATE_KEY,
+                                                            SECURITY_CLUSTER_PUBLIC_KEY)
+                                , CLUSTER_URI);
     }
 
     public static Column[] generateTableColumns(int count) {
