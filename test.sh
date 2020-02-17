@@ -2,7 +2,7 @@
 ##
 # This is a helper script for development, do not use for CI or anything
 ##
-QDB_API_VERSION="3.6.0-SNAPSHOT"
+QDB_API_VERSION="3.7.0-SNAPSHOT"
 
 echo "Cleaning java"
 rm -rf java \
