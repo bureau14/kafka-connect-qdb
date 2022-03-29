@@ -77,18 +77,18 @@ public class TestUtils {
     }
 
     public static Column[] generateTableColumns(int count) {
-        return generateTableColumns(Value.Type.DOUBLE, count);
+        return generateTableColumns(Column.Type.DOUBLE, count);
     }
 
-    public static Column generateTableColumn(Value.Type valueType) {
-        return generateTableColumns(valueType, 1)[0];
+    public static Column generateTableColumn(Column.Type columnType) {
+        return generateTableColumns(columnType, 1)[0];
     }
 
-    public static Column[] generateTableColumns(Value.Type valueType, int count) {
+    public static Column[] generateTableColumns(Column.Type columnType, int count) {
         return Stream.generate(TestUtils::createUniqueAlias)
             .limit(count)
             .map((alias) -> {
-                    return new Column(alias, valueType);
+                    return new Column(alias, columnType);
                 })
             .toArray(Column[]::new);
     }
@@ -151,6 +151,9 @@ public class TestUtils {
             (() ->
              Arrays.stream(cols)
              .map(Column::getType)
+             .map((Column.Type columnType) -> {
+                     return columnType.asValueType();
+                 })
              .map((Value.Type valueType) -> {
                      return TestUtils.generateRandomValueByType(complexity, valueType);
                  })
