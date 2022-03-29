@@ -26,9 +26,9 @@ public class Fixture implements Cloneable {
 
     private static final int     NUM_TABLES  = 1;
     private static final int     NUM_ROWS    = 100;
-    private static Value.Type[]  VALUE_TYPES = { Value.Type.INT64,
-                                                 Value.Type.DOUBLE,
-                                                 Value.Type.BLOB };
+    private static Column.Type[] COLUMN_TYPES = { Column.Type.INT64,
+                                                  Column.Type.DOUBLE,
+                                                  Column.Type.BLOB };
 
     public Column[][]          columns;
     public WritableRow[][]     rows;
@@ -76,7 +76,7 @@ public class Fixture implements Cloneable {
         for (int i = 0; i < NUM_TABLES; ++i) {
 
             // Generate a column of each value type
-            out.columns[i] = Arrays.stream(VALUE_TYPES)
+            out.columns[i] = Arrays.stream(COLUMN_TYPES)
                 .map((type) -> {
                         return TestUtils.generateTableColumn(type);
                     })
