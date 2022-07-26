@@ -2,7 +2,7 @@
 ##
 # This is a helper script for development, do not use for CI or anything
 ##
-QDB_API_VERSION="3.13.5-SNAPSHOT"
+QDB_API_VERSION="3.13.5"
 
 echo "Rebuilding JNI..."
 rm -rf jni \
