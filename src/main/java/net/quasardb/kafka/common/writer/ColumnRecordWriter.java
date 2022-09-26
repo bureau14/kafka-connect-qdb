@@ -7,11 +7,11 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.errors.DataException;
 
 import net.quasardb.qdb.ts.Writer;
+import net.quasardb.qdb.ts.Table;
 import net.quasardb.qdb.ts.Timespec;
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Value;
 
-import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.RecordConverter;
 
 import net.quasardb.kafka.common.resolver.Resolver;
@@ -29,20 +29,24 @@ public class ColumnRecordWriter extends RecordWriter {
         this.valueResolver = valueResolver;
     }
 
-    public void write(Writer w, TableInfo t, SinkRecord s) throws DataException, RuntimeException {
+    public void write(Writer w, Table t, SinkRecord s) throws DataException, RuntimeException {
         String columnName = this.columnResolver.resolve(s);
         String valueName = this.valueResolver.resolve(s);
 
-        int columnIndex = t.getTable().columnIndexById(columnName);
-        Column c = t.getTable().getColumns()[columnIndex];
+        int columnIndex = t.columnIndexById(columnName);
 
-        Value val = RecordConverter.convert(c, valueName, s);
+        Column[] columns = t.getColumns();
+        Value[] row = new Value[columns.length];
 
-        log.debug("has value: " + val.toString());
+        for (int i = 0; i < columns.length; ++i) {
+            if (columnIndex == i) {
+                log.debug("setting column with offset {} to value", i);
 
-        Value[] row = { val };
-
-        int offset = t.getOffset() + columnIndex;
+                row[i] = RecordConverter.convert(columns[i], valueName, s);
+            } else {
+                row[i] = Value.createNull();
+            }
+        }
 
         try {
             Timespec ts = (s.timestamp() == null
@@ -51,7 +55,7 @@ public class ColumnRecordWriter extends RecordWriter {
 
             log.debug("has timespec: " + ts.toString());
 
-            w.append(offset, ts, row);
+            w.append(t, ts, row);
 
         } catch (Exception e) {
             log.error("Unable to write record: " + e.getMessage());

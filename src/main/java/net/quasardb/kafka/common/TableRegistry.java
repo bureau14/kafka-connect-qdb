@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import net.quasardb.qdb.exception.AliasNotFoundException;
 import net.quasardb.qdb.Session;
 import net.quasardb.qdb.ts.Table;
-import net.quasardb.kafka.common.TableInfo;
 
 /**
  * A registry that contains one or more TableInfo entries, which can be
@@ -17,10 +16,10 @@ import net.quasardb.kafka.common.TableInfo;
  */
 public class TableRegistry {
     private static final Logger log = LoggerFactory.getLogger(TableRegistry.class);
-    private Map<String, TableInfo> registry;
+    private Map<String, Table> registry;
 
     public TableRegistry() {
-        this.registry = new HashMap<String, TableInfo>();
+        this.registry = new HashMap<String, Table>();
     }
 
     /**
@@ -32,7 +31,7 @@ public class TableRegistry {
      * @return A reference to the added TableInfo object inside the registry, or
      *         null when the table was not found.
      */
-    public TableInfo put(Session session, String name) {
+    public Table put(Session session, String name) {
         try {
             return this.put(name, new Table(session, name));
         } catch (AliasNotFoundException e) {
@@ -40,18 +39,14 @@ public class TableRegistry {
         }
     }
 
-    public TableInfo put(Table t) {
+    public Table put(Table t) {
         return this.put(t.getName(), t);
     }
 
-    public TableInfo put(String name, Table t) {
-        return this.put(name, new TableInfo(t));
-    }
-
-    public TableInfo put(String name, TableInfo t) {
+    public Table put(String name, Table t) {
         this.registry.put(name, t);
-
         log.debug("Added table " + name + " to TableRegistry");
+
         return t;
     }
 
@@ -61,7 +56,7 @@ public class TableRegistry {
      * @param name Name of the table to look up
      * @return Reference to the Tableinfo
      */
-    public TableInfo get(String name) {
+    public Table get(String name) {
         return this.registry.get(name);
     }
 };

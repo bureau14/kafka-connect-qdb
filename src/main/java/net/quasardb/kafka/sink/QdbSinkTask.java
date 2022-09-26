@@ -27,7 +27,6 @@ import net.quasardb.qdb.ts.Tables;
 import net.quasardb.qdb.ts.Writer;
 
 import net.quasardb.kafka.common.ConnectorUtils;
-import net.quasardb.kafka.common.TableInfo;
 import net.quasardb.kafka.common.TableRegistry;
 import net.quasardb.kafka.common.RecordConverter;
 import net.quasardb.kafka.common.resolver.Resolver;
@@ -122,24 +121,21 @@ public class QdbSinkTask extends SinkTask {
         return newTable;
     }
 
-    private TableInfo addTableToRegistry(String tableName, SinkRecord record) throws DataException {
+    private Table addTableToRegistry(String tableName, SinkRecord record) throws DataException {
         if (tableName == null) {
             throw new DataException("Invalid table name provided: " + tableName);
         }
 
         log.info("Adding table to registry: " + tableName);
 
-        TableInfo t = this.tableRegistry.put(this.session, tableName);
+        Table t = this.tableRegistry.put(this.session, tableName);
         if (t == null) {
             t = this.tableRegistry.put(this.createTable(tableName, record));
         }
 
         if (this.writer == null) {
-            log.debug("Initializing Async Writer");
-            this.writer = Table.asyncWriter(this.session, t.getTable());
-        } else {
-            log.debug("Writer already initialized, adding extra table");
-            this.writer.extraTables(t.getTable());
+            log.debug("Initializing Writer");
+            this.writer = Writer.builder(this.session).asyncPush().dropDuplicates().build();
         }
 
         return t;
@@ -149,14 +145,10 @@ public class QdbSinkTask extends SinkTask {
     public void put(Collection<SinkRecord> sinkRecords) {
         for (SinkRecord s : sinkRecords) {
             String tableName = this.tableResolver.resolve(s);
-            TableInfo t = this.tableRegistry.get(tableName);
+            Table t = this.tableRegistry.get(tableName);
 
             if (t == null) {
                 t = addTableToRegistry(tableName, s);
-            }
-
-            if (t.hasOffset() == false) {
-                t.setOffset(this.writer.tableIndexByName(t.getTable().getName()));
             }
 
             this.recordWriter.write(this.writer, t, s);
