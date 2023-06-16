@@ -65,7 +65,7 @@ public class RecordConverter {
     private static Value doConvert(Column qdbColumn, String recordColumn, Struct data) throws DataException {
         Object value = data.get(recordColumn);
         if (value != null) {
-            switch(qdbColumn.getType()) {
+            switch(qdbColumn.getType().asValueType()) {
             case INT64:
                 if (value instanceof Long) {
                     return Value.createInt64((Long)value);
@@ -73,6 +73,7 @@ public class RecordConverter {
 
                 log.warn("Ignoring int64 column '" + qdbColumn.getName () + "': expected Long value, got: " + value.getClass());
                 return Value.createNull();
+
             case DOUBLE:
                 if (value instanceof Double) {
                     return Value.createDouble((Double)value);
@@ -84,6 +85,7 @@ public class RecordConverter {
 
                 log.warn("Ignoring double column '" + qdbColumn.getName () + "': expected Double value, got: " + value.getClass());
                 return Value.createNull();
+
             case BLOB:
                 if (value instanceof byte[]) {
                     return Value.createSafeBlob((byte[])value);
@@ -91,6 +93,9 @@ public class RecordConverter {
 
                 log.warn("Ignoring blob column '" + qdbColumn.getName () + "': expected String value, got: " + value.getClass());
                 return Value.createNull();
+
+            default:
+                throw new DataException("Column type of column with nbame '" + qdbColumn.getName() + "' not supported");
             }
         }
 
@@ -113,7 +118,7 @@ public class RecordConverter {
     private static Value doConvert(Column qdbColumn, String recordColumn, Map data) throws DataException {
         Object value = data.get(recordColumn);
         if (value != null) {
-            switch(qdbColumn.getType()) {
+            switch(qdbColumn.getType().asValueType()) {
             case INT64:
                 if (value instanceof Long) {
                     return Value.createInt64((Long)value);
@@ -150,6 +155,9 @@ public class RecordConverter {
 
                 log.warn("Ignoring blob column '" + qdbColumn.getName () + "': expected String value, got: " + value.getClass());
                 return Value.createNull();
+
+            default:
+                throw new DataException("Column type of column with nbame '" + qdbColumn.getName() + "' not supported");
 
             }
         }
