@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="928a841e-239b-432a-9638-6e742d518728" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2021.1/project-config.xsd">
+  <name>Build</name>
+  <settings>
+    <options>
+      <option name="artifactRules" value="jni/*.jar =&gt; .&#xA;java/*.jar =&gt; .&#xA;target/*.jar =&gt; ." />
+      <option name="cleanBuild" value="true" />
+      <option name="executionTimeoutMin" value="20" />
+      <option name="showDependenciesChanges" value="true" />
+    </options>
+    <parameters>
+      <param name="env.CMAKE_BUILD_TYPE" value="Release" />
+      <param name="jvm.flags" value="-d64" />
+      <param name="qdbd.path" value="%system.teamcity.build.checkoutDir%/qdb/bin/qdbd" />
+    </parameters>
+    <build-runners>
+      <runner id="RUNNER_193" name="Local JNI install" type="MavenInstall">
+        <parameters>
+          <param name="env.PATH" value="%env.PATH%:%teamcity.tool.maven%/bin" />
+          <param name="teamcity.step.mode" value="default" />
+        </parameters>
+      </runner>
+      <runner id="RUNNER_200" name="Start services" type="simpleRunner">
+        <parameters>
+          <param name="command.executable" value="bash" />
+          <param name="command.parameters" value="scripts/tests/setup/start-services.sh" />
+          <param name="script.content" value="./start-services" />
+          <param name="teamcity.step.mode" value="default" />
+        </parameters>
+      </runner>
+      <runner id="RUNNER_149" name="Test" type="Maven2">
+        <parameters>
+          <param name="goals" value="test" />
+          <param name="localRepoScope" value="mavenDefault" />
+          <param name="maven.path" value="%teamcity.tool.maven.DEFAULT%" />
+          <param name="pomLocation" value="pom.xml" />
+          <param name="teamcity.step.mode" value="default" />
+          <param name="userSettingsSelection" value="userSettingsSelection:default" />
+        </parameters>
+      </runner>
+      <runner id="RUNNER_199" name="Jar" type="Maven2">
+        <parameters>
+          <param name="goals" value="package" />
+          <param name="localRepoScope" value="mavenDefault" />
+          <param name="maven.path" value="%teamcity.tool.maven.DEFAULT%" />
+          <param name="pomLocation" value="pom.xml" />
+          <param name="runnerArgs" value="-DskipTests" />
+          <param name="teamcity.step.mode" value="default" />
+          <param name="userSettingsSelection" value="userSettingsSelection:default" />
+        </parameters>
+      </runner>
+      <runner id="RUNNER_201" name="Stop services" type="simpleRunner">
+        <parameters>
+          <param name="command.executable" value="bash" />
+          <param name="command.parameters" value="scripts/tests/setup/stop-services.sh" />
+          <param name="script.content" value="./stop-services" />
+          <param name="teamcity.step.mode" value="execute_always" />
+        </parameters>
+      </runner>
+    </build-runners>
+    <vcs-settings>
+      <vcs-entry-ref root-id="Api_Kafka_KafkaConnectQdb" />
+    </vcs-settings>
+    <requirements>
+      <exists id="RQ_125" name="system.java.version" />
+    </requirements>
+    <build-triggers />
+    <artifact-dependencies>
+      <dependency id="ARTIFACT_DEPENDENCY_24" sourceBuildTypeId="Api_Jni_Composite" cleanDestination="false">
+        <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
+        <artifact sourcePath="jni-*.jar =&gt; jni/" />
+      </dependency>
+    </artifact-dependencies>
+    <dependencies>
+      <depend-on sourceBuildTypeId="Api_Jni_Composite">
+        <options>
+          <option name="take-started-build-with-same-revisions" value="true" />
+          <option name="take-successful-builds-only" value="true" />
+        </options>
+      </depend-on>
+    </dependencies>
+    <cleanup />
+  </settings>
+</template>
+
