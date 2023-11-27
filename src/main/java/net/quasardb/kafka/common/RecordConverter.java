@@ -13,6 +13,7 @@ import org.apache.kafka.connect.errors.DataException;
 
 import net.quasardb.qdb.ts.Column;
 import net.quasardb.qdb.ts.Value;
+import net.quasardb.qdb.ts.Timespec;
 
 /**
  * API for various strategies for converting a Kafka record into
@@ -21,6 +22,7 @@ import net.quasardb.qdb.ts.Value;
 public class RecordConverter {
 
     private static final Logger log = LoggerFactory.getLogger(RecordConverter.class);
+    private static final String TIMESTAMP_COLUMN = new String("$timestamp");
 
     public static Value convert(Column qdbColumn, String recordColumn, SinkRecord record) throws DataException {
         return doConvert(qdbColumn, recordColumn, record.valueSchema(), record.value());
@@ -30,6 +32,9 @@ public class RecordConverter {
         return doConvert(columns, record.valueSchema(), record.value());
     }
 
+    public static Timespec getTimestamp(SinkRecord record) throws DataException {
+        return doGetTimestamp(record.valueSchema(), record.value());
+    }
 
     private static Value doConvert(Column qdbColumn, String recordColumn, Schema schema, Object data) throws DataException {
 
@@ -60,7 +65,6 @@ public class RecordConverter {
 
         throw new DataException("Only schemaful converters are currently supported, input: " + data.toString());
     }
-
 
     private static Value doConvert(Column qdbColumn, String recordColumn, Struct data) throws DataException {
         Object value = data.get(recordColumn);
@@ -178,4 +182,40 @@ public class RecordConverter {
 
         return out;
     }
+
+    private static Timespec doGetTimestamp(Schema schema, Object data) throws DataException {
+        // AVRO or JSON with schema
+        if (schema != null && data instanceof Struct) {
+            return doGetTimestamp((Struct)data);
+        }
+
+        // structured JSON
+        if (data instanceof Map) {
+            return doGetTimestamp((Map)data);
+        }
+
+        throw new DataException("Only schemaful converters are currently supported, input: " + data.toString());
+    }
+
+    private static Timespec doGetTimestamp(Struct data) throws DataException {
+        return null;
+    }
+
+    private static Timespec doGetTimestamp(Map data) throws DataException {
+        if (data.containsKey(TIMESTAMP_COLUMN) == false) {
+            return null;
+        }
+
+        Object timestamp = data.get(TIMESTAMP_COLUMN);
+
+        if (timestamp instanceof Long) {
+            // Treat as unix timestamp, milliseconds since epoch
+            return new Timespec((Long)timestamp);
+        }
+
+        log.warn("found timestamp column, unable to infer it as timestamp automatically: " + timestamp.toString());
+
+        return null;
+    }
+
 }

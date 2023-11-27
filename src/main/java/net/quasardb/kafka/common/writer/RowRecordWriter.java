@@ -24,9 +24,19 @@ public class RowRecordWriter extends RecordWriter {
         Value[] row = RecordConverter.convert (t.getColumns(), s);
 
         try {
-            Timespec ts = (s.timestamp() == null
-                           ? Timespec.now()
-                           : new Timespec(s.timestamp()));
+            // Prioritize Kafka's native support for record's timestamps over anything else
+            Timespec ts = s.timestamp();
+
+            if (ts == null) {
+                // Attempt to read it from the actual record, maybe it is stored as a $timestamp
+                ts = RecordConverter.getTimestamp(s);
+            }
+
+            if (ts == null) {
+                // Default to just the current timestamp
+                ts = Timespec.now();
+            }
+
             w.append(t, ts, row);
         } catch (Exception e) {
             log.error("Unable to write record: " + e.getMessage());
