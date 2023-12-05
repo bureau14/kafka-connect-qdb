@@ -15,6 +15,7 @@
     <requirements>
       <equals id="RQ_111" name="teamcity.agent.name" value="Mac Mini 1" />
       <equals id="RQ_201" name="teamcity.agent.jvm.os.name" value="Mac OS X" />
+      <equals id="RQ_25" name="teamcity.agent.jvm.os.arch" value="x86_64" />
     </requirements>
     <build-triggers />
     <artifact-dependencies>
