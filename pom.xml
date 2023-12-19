@@ -3,7 +3,7 @@
 
   <groupId>net.quasardb</groupId>
   <artifactId>kafka-connect-qdb</artifactId>
-  <version>3.14.1-SNAPSHOT</version>
+  <version>3.14.1</version>
   <packaging>jar</packaging>
   <description>Kafka Connect plugin for the QuasarDB database</description>
 
@@ -66,40 +66,40 @@
     <dependency>
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
-      <version>3.14.1-SNAPSHOT</version>
+      <version>3.14.1</version>
     </dependency>
     <dependency>
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
-      <version>3.14.1-SNAPSHOT</version>
+      <version>3.14.1</version>
       <classifier>linux-x86_64</classifier>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
-      <version>3.14.1-SNAPSHOT</version>
+      <version>3.14.1</version>
       <classifier>osx-x86_64</classifier>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
-      <version>3.14.1-SNAPSHOT</version>
+      <version>3.14.1</version>
       <classifier>freebsd-x86_64</classifier>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
-      <version>3.14.1-SNAPSHOT</version>
+      <version>3.14.1</version>
       <classifier>windows-x86_64</classifier>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
-      <version>3.14.1-SNAPSHOT</version>
+      <version>3.14.1</version>
       <classifier>windows-x86_32</classifier>
       <scope>runtime</scope>
     </dependency>
