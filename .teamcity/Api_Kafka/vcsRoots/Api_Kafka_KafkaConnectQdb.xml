@@ -6,11 +6,13 @@
   <param name="authMethod" value="TEAMCITY_SSH_KEY" />
   <param name="branch" value="refs/heads/master" />
   <param name="ignoreKnownHosts" value="true" />
+  <param name="reportTagRevisions" value="true" />
   <param name="submoduleCheckout" value="CHECKOUT" />
-  <param name="teamcity:branchSpec" value="+:refs/heads/*" />
+  <param name="teamcity:branchSpec"><![CDATA[+:refs/heads/*
++:refs/tags/*]]></param>
   <param name="teamcitySshKey" value="teamcity@alcor.quasardb.net" />
   <param name="url" value="git@github.com:bureau14/kafka-connect-qdb.git" />
-  <param name="useAlternates" value="true" />
+  <param name="useAlternates" value="USE_MIRRORS" />
   <param name="usernameStyle" value="NAME" />
 </vcs-root>
 
