@@ -9,7 +9,7 @@
     <build-runners />
     <vcs-settings />
     <requirements>
-      <contains id="RQ_111" name="teamcity.agent.name" value="rhel" />
+      <equals id="RQ_111" name="teamcity.agent.jvm.os.name" value="Linux" />
     </requirements>
     <build-triggers />
     <artifact-dependencies>
