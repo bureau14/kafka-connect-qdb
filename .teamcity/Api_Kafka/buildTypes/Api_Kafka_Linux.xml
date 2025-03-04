@@ -3,9 +3,6 @@
   <name>Linux</name>
   <description />
   <settings ref="Api_Kafka_Build">
-    <disabled-settings>
-      <setting-ref ref="RQ_125" />
-    </disabled-settings>
     <parameters>
       <param name="platform" value="linux-64bit-core2" />
     </parameters>
