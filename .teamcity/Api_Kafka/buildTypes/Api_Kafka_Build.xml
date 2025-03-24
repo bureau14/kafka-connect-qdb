@@ -61,9 +61,7 @@
     <vcs-settings>
       <vcs-entry-ref root-id="Api_Kafka_KafkaConnectQdb" />
     </vcs-settings>
-    <requirements>
-      <exists id="RQ_125" name="system.java.version" />
-    </requirements>
+    <requirements />
     <build-triggers />
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_24" sourceBuildTypeId="Api_Jni_Composite" cleanDestination="false">
