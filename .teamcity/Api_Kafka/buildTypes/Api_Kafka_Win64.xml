@@ -22,18 +22,6 @@
           <param name="userSettingsSelection" value="userSettingsSelection:default" />
         </parameters>
       </runner>
-      <runner id="RUNNER_199" name="Jar" type="Maven2">
-        <parameters>
-          <param name="goals" value="package" />
-          <param name="localRepoScope" value="mavenDefault" />
-          <param name="maven.path" value="%teamcity.tool.maven.DEFAULT%" />
-          <param name="pomLocation" value="pom.xml" />
-          <param name="runnerArgs" value="-DskipTests" />
-          <param name="target.jdk.home" value="%env.JDK_1_8_x64%" />
-          <param name="teamcity.step.mode" value="default" />
-          <param name="userSettingsSelection" value="userSettingsSelection:default" />
-        </parameters>
-      </runner>
     </build-runners>
     <vcs-settings />
     <requirements>
