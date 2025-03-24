@@ -5,7 +5,6 @@
   <settings ref="Api_Kafka_Build">
     <disabled-settings>
       <setting-ref ref="RQ_125" />
-      <setting-ref ref="RQ_60" />
     </disabled-settings>
     <parameters>
       <param name="env.JAVA_HOME" value="%system.java-64.home%" />
@@ -38,7 +37,6 @@
     </build-runners>
     <vcs-settings />
     <requirements>
-      <equals id="RQ_60" name="system.java.cpu" value="x64" />
       <contains id="RQ_85" name="teamcity.agent.jvm.os.name" value="Windows" />
       <contains id="RQ_111" name="teamcity.agent.name" value="default" />
     </requirements>
