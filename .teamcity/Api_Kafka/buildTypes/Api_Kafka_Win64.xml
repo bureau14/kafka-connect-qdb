@@ -46,7 +46,7 @@
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_454" sourceBuildTypeId="Quasardb_Artifacts_Release_Windows_X8664Core2" cleanDestination="false">
         <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
-        <artifact sourcePath="qdb-*-c-api.zip!**/* =&gt; qdb&#xD;&#xA;qdb-*-utils.zip!**/* =&gt; qdb&#xD;&#xA;qdb-*-server.zip!**/* =&gt; qdb" />
+        <artifact sourcePath="qdb-*-c-api.tar.zst!**/* =&gt; qdb&#xD;&#xA;qdb-*-utils.tar.zst!**/* =&gt; qdb&#xD;&#xA;qdb-*-server.tar.zst!**/* =&gt; qdb" />
       </dependency>
     </artifact-dependencies>
     <dependencies>
