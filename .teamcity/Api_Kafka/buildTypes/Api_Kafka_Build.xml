@@ -45,6 +45,7 @@
           <param name="maven.path" value="%teamcity.tool.maven.DEFAULT%" />
           <param name="pomLocation" value="pom.xml" />
           <param name="runnerArgs" value="-DskipTests" />
+          <param name="target.jdk.home" value="%env.JDK_17_0%" />
           <param name="teamcity.step.mode" value="default" />
           <param name="userSettingsSelection" value="userSettingsSelection:default" />
         </parameters>
