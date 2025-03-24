@@ -10,19 +10,7 @@
       <param name="env.JAVA_HOME" value="%system.java-64.home%" />
       <param name="platform" value="windows-64bit-core2" />
     </parameters>
-    <build-runners>
-      <runner id="RUNNER_149" name="Test" type="Maven2">
-        <parameters>
-          <param name="goals" value="test" />
-          <param name="localRepoScope" value="mavenDefault" />
-          <param name="maven.path" value="%teamcity.tool.maven.DEFAULT%" />
-          <param name="pomLocation" value="pom.xml" />
-          <param name="target.jdk.home" value="%env.JDK_1_8_x64%" />
-          <param name="teamcity.step.mode" value="default" />
-          <param name="userSettingsSelection" value="userSettingsSelection:default" />
-        </parameters>
-      </runner>
-    </build-runners>
+    <build-runners />
     <vcs-settings />
     <requirements>
       <contains id="RQ_85" name="teamcity.agent.jvm.os.name" value="Windows" />
