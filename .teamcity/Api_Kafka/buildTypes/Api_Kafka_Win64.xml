@@ -38,7 +38,6 @@
     <vcs-settings />
     <requirements>
       <contains id="RQ_85" name="teamcity.agent.jvm.os.name" value="Windows" />
-      <contains id="RQ_111" name="teamcity.agent.name" value="default" />
     </requirements>
     <build-triggers />
     <artifact-dependencies>
