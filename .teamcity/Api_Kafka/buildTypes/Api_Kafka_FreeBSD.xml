@@ -15,7 +15,7 @@
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_450" sourceBuildTypeId="Quasardb_Artifacts_Release_FreeBSD_X8664Haswell_Composite" cleanDestination="false">
         <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
-        <artifact sourcePath="qdb-*-c-api.tar.gz!**/* =&gt; qdb&#xD;&#xA;qdb-*-utils.tar.gz!**/* =&gt; qdb&#xD;&#xA;qdb-*-server.tar.gz!**/* =&gt; qdb" />
+        <artifact sourcePath="qdb-*-c-api.tar.zst!**/* =&gt; qdb&#xD;&#xA;qdb-*-utils.tar.zst!**/* =&gt; qdb&#xD;&#xA;qdb-*-server.tar.zst!**/* =&gt; qdb" />
       </dependency>
     </artifact-dependencies>
     <dependencies>
