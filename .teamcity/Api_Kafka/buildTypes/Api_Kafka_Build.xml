@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<template xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="928a841e-239b-432a-9638-6e742d518728" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2021.1/project-config.xsd">
+<template xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="928a841e-239b-432a-9638-6e742d518728" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2025.3/project-config.xsd">
   <name>Build</name>
   <settings>
     <options>
@@ -12,6 +12,7 @@
       <param name="env.CMAKE_BUILD_TYPE" value="Release" />
       <param name="jvm.flags" value="-d64" />
       <param name="qdbd.path" value="%system.teamcity.build.checkoutDir%/qdb/bin/qdbd" />
+      <param name="teamcity.tool.maven" value="%teamcity.tool.maven.DEFAULT%" />
     </parameters>
     <build-runners>
       <runner id="RUNNER_193" name="Local JNI install" type="MavenInstall">
@@ -62,8 +63,6 @@
     <vcs-settings>
       <vcs-entry-ref root-id="Api_Kafka_KafkaConnectQdb" />
     </vcs-settings>
-    <requirements />
-    <build-triggers />
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_24" sourceBuildTypeId="Api_Jni_Composite" cleanDestination="false">
         <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
@@ -78,7 +77,6 @@
         </options>
       </depend-on>
     </dependencies>
-    <cleanup />
   </settings>
 </template>
 
