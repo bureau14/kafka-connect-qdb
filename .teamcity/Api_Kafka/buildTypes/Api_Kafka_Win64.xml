@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<build-type xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="a861bb51-01da-4a10-8e54-fb0855349e01" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2021.1/project-config.xsd">
+<build-type xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="a861bb51-01da-4a10-8e54-fb0855349e01" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2025.3/project-config.xsd">
   <name>Win64</name>
   <description />
   <settings ref="Api_Kafka_Build">
@@ -10,12 +10,9 @@
       <param name="env.JAVA_HOME" value="%system.java-64.home%" />
       <param name="platform" value="windows-64bit-core2" />
     </parameters>
-    <build-runners />
-    <vcs-settings />
     <requirements>
       <contains id="RQ_85" name="teamcity.agent.jvm.os.name" value="Windows" />
     </requirements>
-    <build-triggers />
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_454" sourceBuildTypeId="Quasardb_Artifacts_Release_Windows_X8664Core2" cleanDestination="false">
         <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
@@ -30,7 +27,6 @@
         </options>
       </depend-on>
     </dependencies>
-    <cleanup />
   </settings>
 </build-type>
 

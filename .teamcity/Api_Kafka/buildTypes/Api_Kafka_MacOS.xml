@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<build-type xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="cc0b214a-9100-479e-b87a-7daa9bf49f54" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2021.1/project-config.xsd">
+<build-type xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" uuid="cc0b214a-9100-479e-b87a-7daa9bf49f54" xsi:noNamespaceSchemaLocation="https://www.jetbrains.com/teamcity/schemas/2025.3/project-config.xsd">
   <name>macOS</name>
   <description />
   <settings ref="Api_Kafka_Build">
@@ -10,14 +10,11 @@
     <parameters>
       <param name="platform" value="darwin-64bit-core2" />
     </parameters>
-    <build-runners />
-    <vcs-settings />
     <requirements>
       <equals id="RQ_111" name="teamcity.agent.name" value="Mac Mini 1" />
       <equals id="RQ_201" name="teamcity.agent.jvm.os.name" value="Mac OS X" />
       <equals id="RQ_25" name="teamcity.agent.jvm.os.arch" value="x86_64" />
     </requirements>
-    <build-triggers />
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_452" sourceBuildTypeId="Quasardb_Artifacts_Release_MacOS_X8664Core2_Composite" cleanDestination="false">
         <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
@@ -32,7 +29,6 @@
         </options>
       </depend-on>
     </dependencies>
-    <cleanup />
   </settings>
 </build-type>
 
