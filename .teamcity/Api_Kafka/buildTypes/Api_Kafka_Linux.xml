@@ -5,7 +5,6 @@
   <settings ref="Api_Kafka_Build">
     <parameters>
       <param name="platform" value="linux-64bit-core2" />
-      <param name="teamcity.tool.maven" value="" />
     </parameters>
     <requirements>
       <equals id="RQ_111" name="teamcity.agent.jvm.os.name" value="Linux" />
