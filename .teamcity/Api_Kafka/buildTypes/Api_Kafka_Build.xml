@@ -17,8 +17,12 @@
     <build-runners>
       <runner id="RUNNER_193" name="Local JNI install" type="MavenInstall">
         <parameters>
-          <param name="env.PATH" value="%env.PATH%:%teamcity.tool.maven%/bin" />
+          <param name="env.PATH" value="%env.PATH%:%teamcity.tool.maven.DEFAULT%/bin" />
+          <param name="plugin.docker.imageId" value="" />
+          <param name="plugin.docker.imagePlatform" value="" />
+          <param name="plugin.docker.run.parameters" value="" />
           <param name="teamcity.step.mode" value="default" />
+          <param name="teamcity.step.phase" value="" />
         </parameters>
       </runner>
       <runner id="RUNNER_200" name="Start services" type="simpleRunner">
