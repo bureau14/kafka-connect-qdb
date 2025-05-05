@@ -10,6 +10,7 @@
     </options>
     <parameters>
       <param name="env.CMAKE_BUILD_TYPE" value="Release" />
+      <param name="env.JAVA_HOME" value="%teamcity.agent.jvm.java.home%" />
       <param name="jvm.flags" value="-d64" />
       <param name="qdbd.path" value="%system.teamcity.build.checkoutDir%/qdb/bin/qdbd" />
       <param name="teamcity.tool.maven" value="%teamcity.tool.maven.DEFAULT%" />
