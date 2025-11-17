@@ -85,7 +85,7 @@ public class ConnectorUtils {
             String userPrivateKey = (String)validatedProps.get(SECURITY_USER_PRIVATE_KEY_CONFIG);
             String clusterPublicKey = (String)validatedProps.get(SECURITY_CLUSTER_PUBLIC_KEY_CONFIG);
             log.info("Establishing secure connection");
-            return Session.builder().uri(uri).securityOptions(Session.SecurityOptions(userName, userPrivateKey, clusterPublicKey)).build();
+            return Session.builder().uri(uri).securityOptions(Session.SecurityOptions.toNative(userName, userPrivateKey, clusterPublicKey)).build();
         } else {
             log.warn("Establishing insecure connection");
             return Session.builder().uri(uri).build();
