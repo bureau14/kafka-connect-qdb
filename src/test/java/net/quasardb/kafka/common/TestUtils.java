@@ -70,10 +70,7 @@ public class TestUtils {
     private static JsonFactory jsonFactory = new JsonFactory();
 
     public static Session createSession() {
-        return Session.connect(new Session.SecurityOptions(SECURITY_USERNAME,
-                                                            SECURITY_USER_PRIVATE_KEY,
-                                                            SECURITY_CLUSTER_PUBLIC_KEY)
-                                , CLUSTER_URI);
+        return Session.builder().uri(CLUSTER_URI).securityOptions(new Session.SecurityOptions(SECURITY_USERNAME, SECURITY_USER_PRIVATE_KEY, SECURITY_CLUSTER_PUBLIC_KEY)).build();
     }
 
     public static Column[] generateTableColumns(int count) {
