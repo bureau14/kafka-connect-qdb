@@ -11,18 +11,17 @@
       <param name="platform" value="darwin-64bit-core2" />
     </parameters>
     <requirements>
-      <equals id="RQ_111" name="teamcity.agent.name" value="Mac Mini 1" />
       <equals id="RQ_201" name="teamcity.agent.jvm.os.name" value="Mac OS X" />
-      <equals id="RQ_25" name="teamcity.agent.jvm.os.arch" value="x86_64" />
+      <equals id="RQ_25" name="teamcity.agent.jvm.os.arch" value="aarch64" />
     </requirements>
     <artifact-dependencies>
-      <dependency id="ARTIFACT_DEPENDENCY_452" sourceBuildTypeId="Quasardb_Artifacts_Release_MacOS_X8664Core2_Composite" cleanDestination="false">
+      <dependency id="ARTIFACT_DEPENDENCY_452" sourceBuildTypeId="Quasardb_Artifacts_Release_MacOS_AArch64_Composite" cleanDestination="false">
         <revisionRule name="sameChainOrLastFinished" revision="latest.sameChainOrLastFinished" />
         <artifact sourcePath="qdb-*-c-api.tar.zst!**/* =&gt; qdb&#xD;&#xA;qdb-*-utils.tar.zst!**/* =&gt; qdb&#xD;&#xA;qdb-*-server.tar.zst!**/* =&gt; qdb" />
       </dependency>
     </artifact-dependencies>
     <dependencies>
-      <depend-on sourceBuildTypeId="Quasardb_Artifacts_Release_MacOS_X8664Core2_Composite">
+      <depend-on sourceBuildTypeId="Quasardb_Artifacts_Release_MacOS_AArch64_Composite">
         <options>
           <option name="take-started-build-with-same-revisions" value="true" />
           <option name="take-successful-builds-only" value="true" />
