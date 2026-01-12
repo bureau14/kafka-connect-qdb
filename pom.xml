@@ -79,7 +79,7 @@
       <groupId>net.quasardb</groupId>
       <artifactId>jni</artifactId>
       <version>3.14.3-SNAPSHOT</version>
-      <classifier>osx-x86_64</classifier>
+      <classifier>osx-aarch64</classifier>
       <scope>runtime</scope>
     </dependency>
     <dependency>
