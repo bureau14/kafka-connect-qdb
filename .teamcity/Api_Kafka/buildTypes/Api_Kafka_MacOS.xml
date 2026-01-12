@@ -8,7 +8,7 @@
       <setting-ref ref="RUNNER_149" />
     </disabled-settings>
     <parameters>
-      <param name="platform" value="darwin-64bit-core2" />
+      <param name="platform" value="darwin-64bit-aarch64" />
     </parameters>
     <requirements>
       <equals id="RQ_201" name="teamcity.agent.jvm.os.name" value="Mac OS X" />
