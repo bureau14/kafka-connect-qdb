@@ -8,7 +8,7 @@
     </parameters>
     <requirements>
       <equals id="RQ_111" name="teamcity.agent.jvm.os.name" value="Linux" />
-      <equals id="RQ_111" name="teamcity.agent.jvm.os.arch" value="amd64" />
+      <equals id="RQ_112" name="teamcity.agent.jvm.os.arch" value="amd64" />
     </requirements>
     <artifact-dependencies>
       <dependency id="ARTIFACT_DEPENDENCY_451" sourceBuildTypeId="Quasardb_Artifacts_Release_Linux_X8664Core2_Composite" cleanDestination="false">
