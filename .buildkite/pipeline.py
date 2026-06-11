@@ -60,7 +60,7 @@ BUILD_TYPES = ["Release"]
 GLOBAL_ENV: dict[str, str] = {
     "JAVA_PATH": "$$QDB_CICD_AGENT_JAVA_PATH",
     "JAVA_HOME": "$$QDB_CICD_AGENT_JAVA_HOME",
-    "MVN_PATH": "$$QDB_CICD_AGENT_MAVEN",
+    # "MVN_PATH": "$$QDB_CICD_AGENT_MAVEN",
 }
 
 STEP_ENV: dict[str, dict[str, str]] = {}
