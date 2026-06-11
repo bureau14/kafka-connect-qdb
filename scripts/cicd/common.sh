@@ -23,6 +23,7 @@ fi
 
 JNI_VERSION=${JNI_VERSION:-3.15.0-SNAPSHOT}
 QDB_JNI_ARCH_CLASSIFIER=${QDB_JNI_ARCH_CLASSIFIER:-}
+JNI_CLASSIFIERS=(linux-x86_64 osx-aarch64 freebsd-x86_64 windows-x86_64)
 
 if [[ -z "${QDB_JNI_ARCH_CLASSIFIER}" ]]; then
     case "$(uname)" in

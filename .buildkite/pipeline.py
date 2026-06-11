@@ -72,14 +72,6 @@ OS_ENV: dict[str, dict[str, str]] = {
 }
 OS_STEP_ENV: dict[str, dict[str, str]] = {}
 
-JNI_DEPENDENCY_VARIANTS = {
-    "linux": "linux-core2-release",
-    "freebsd": "freebsd-core2-release",
-    "macos": "macos-aarch64-release",
-    "windows": "windows-core2-release",
-}
-
-
 def _env(p: Platform, step_name: str, build_type: str) -> dict[str, str]:
     """Compose the full environment dict for one step."""
     return merge_env(
@@ -103,7 +95,6 @@ def generate_pipeline() -> Pipeline:
             slug = p.slug(bt.lower())
             variants.append(slug)
             qdb_dependency_slug = p.slug("release")
-            jni_dependency_slug = JNI_DEPENDENCY_VARIANTS[p.os]
 
             tvars = {
                 "slug": slug,
@@ -115,11 +106,8 @@ def generate_pipeline() -> Pipeline:
                 "upload": {"variant": slug, "git-ref": git_ref},
                 "promote": {"variant": slug, "git-ref": git_ref},
                 "download": {
+                    "git-ref": git_ref,
                     "by_project": {
-                        "qdb-api-jni": {
-                            "variant": jni_dependency_slug,
-                            "git-ref": git_ref,
-                        },
                         "quasardb-build": {
                             "variant": qdb_dependency_slug,
                             "git-ref": git_ref,

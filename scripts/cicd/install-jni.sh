@@ -23,7 +23,18 @@ if [[ ! -f "${CLASSIFIER_JAR}" ]]; then
     exit 1
 fi
 
+for arch in "${JNI_CLASSIFIERS[@]}"; do
+    classifier_jar="${JNI_DIR}/jni-${JNI_VERSION}-${arch}.jar"
+    if [[ ! -f "${classifier_jar}" ]]; then
+        echo "Missing JNI classifier jar required by pom.xml: ${classifier_jar}" >&2
+        echo "kafka-connect-qdb declares all JNI runtime classifiers, so CI must download/install all of them." >&2
+        exit 1
+    fi
+done
+
 "${MVN}" install:install-file -f pom-jni.xml
-"${MVN}" install:install-file -f pom-jni-arch.xml -Darch="${QDB_JNI_ARCH_CLASSIFIER}"
+for arch in "${JNI_CLASSIFIERS[@]}"; do
+    "${MVN}" install:install-file -f pom-jni-arch.xml -Darch="${arch}"
+done
 
 popd

@@ -31,6 +31,25 @@ plugins:
           - project_id: "qdb-api-jni"
             output-dir: "jni"
             extract: false
+            variant: "linux-core2-release"
+            files:
+              - "jni-*.jar"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "freebsd-core2-release"
+            files:
+              - "jni-*.jar"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "macos-aarch64-release"
+            files:
+              - "jni-*.jar"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "windows-core2-release"
             files:
               - "jni-*.jar"
       upload:
