@@ -1,0 +1,64 @@
+agents:
+  queue: "default-{queue}"
+
+label: "{name} ({slug})"
+key: "build-{slug}"
+
+timeout_in_minutes: 20
+
+commands:
+  - echo "+++ Install JNI artifacts"
+  - bash scripts/cicd/install-jni.sh
+  - echo "+++ Start Services"
+  - bash scripts/tests/setup/start-services.sh
+  - echo "+++ Run Tests"
+  - bash scripts/cicd/test.sh
+  - echo "+++ Package"
+  - bash scripts/cicd/package.sh
+
+plugins:
+  - bureau14/qdb-artifacts#master:
+      download:
+        clean: true
+        projects:
+          - project_id: "quasardb-build"
+            output-dir: "qdb"
+            extract: true
+            files:
+              - "*-c-api.tar.zst!*"
+              - "*-server.tar.zst!*"
+              - "*-utils.tar.zst!*"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "linux-core2-release"
+            files:
+              - "jni-*.jar"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "freebsd-core2-release"
+            files:
+              - "jni-*.jar"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "macos-aarch64-release"
+            files:
+              - "jni-*.jar"
+          - project_id: "qdb-api-jni"
+            output-dir: "jni"
+            extract: false
+            variant: "windows-core2-release"
+            files:
+              - "jni-*.jar"
+      upload:
+        files:
+          - "target/*.jar"
+        base_dir: "target"
+      promote: {}
+  - bureau14/qdb-test-report#master:
+      title: "Test report {slug}"
+      job:
+        variant: {slug}
+        junit_input_path: "target/surefire-reports/TEST-*.xml"
