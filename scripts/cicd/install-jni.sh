@@ -8,33 +8,94 @@ source "${THIS_SCRIPT_DIR}/common.sh"
 pushd "${PROJECT_ROOT}"
 
 JNI_DIR="${PROJECT_ROOT}/jni"
-BASE_JAR="${JNI_DIR}/jni-${JNI_VERSION}.jar"
 
-if [[ ! -f "${BASE_JAR}" ]]; then
-    echo "Missing JNI base jar: ${BASE_JAR}"
-    echo "Expected jni-*.jar in ${JNI_DIR}"
-    exit 1
-fi
+find_single_jni_jar() {
+    local description="$1"
+    local exact_jar="$2"
+    local pattern="$3"
 
-CLASSIFIER_JAR="${JNI_DIR}/jni-${JNI_VERSION}-${QDB_JNI_ARCH_CLASSIFIER}.jar"
-if [[ ! -f "${CLASSIFIER_JAR}" ]]; then
-    echo "Missing JNI classifier jar: ${CLASSIFIER_JAR}" >&2
-    echo "Expected ${QDB_JNI_ARCH_CLASSIFIER} JNI jar in ${JNI_DIR}"
-    exit 1
-fi
+    if [[ -f "${exact_jar}" ]]; then
+        printf '%s\n' "${exact_jar}"
+        return 0
+    fi
+
+    local matches=()
+    while IFS= read -r -d '' jar; do
+        matches+=("${jar}")
+    done < <(find "${JNI_DIR}" -maxdepth 1 -type f -name "${pattern}" -print0 | sort -z)
+
+    case "${#matches[@]}" in
+        0)
+            echo "Missing JNI ${description} jar: ${exact_jar}" >&2
+            echo "Expected ${pattern} in ${JNI_DIR}" >&2
+            exit 1
+            ;;
+        1)
+            printf '%s\n' "${matches[0]}"
+            ;;
+        *)
+            echo "Found multiple JNI ${description} jars matching ${pattern}:" >&2
+            printf '  %s\n' "${matches[@]}" >&2
+            echo "Remove the extra jars or provide ${exact_jar}." >&2
+            exit 1
+            ;;
+    esac
+}
+
+find_base_jni_jar() {
+    local exact_jar="${JNI_DIR}/jni-${JNI_VERSION}.jar"
+
+    if [[ -f "${exact_jar}" ]]; then
+        printf '%s\n' "${exact_jar}"
+        return 0
+    fi
+
+    local matches=()
+    local jar
+    while IFS= read -r -d '' jar; do
+        local is_classifier_jar=0
+        for arch in "${JNI_CLASSIFIERS[@]}" "${QDB_JNI_ARCH_CLASSIFIER}"; do
+            if [[ "${jar}" == *"-${arch}.jar" ]]; then
+                is_classifier_jar=1
+                break
+            fi
+        done
+
+        if [[ "${is_classifier_jar}" -eq 0 ]]; then
+            matches+=("${jar}")
+        fi
+    done < <(find "${JNI_DIR}" -maxdepth 1 -type f -regextype posix-extended -regex ".*/jni-[0-9]+(\.[0-9]+)*(-SNAPSHOT)?\.jar" -print0 | sort -z)
+
+    case "${#matches[@]}" in
+        0)
+            echo "Missing JNI base jar: ${exact_jar}" >&2
+            echo "Expected one base JNI jar (jni-<version>.jar or jni-<version>-SNAPSHOT.jar) in ${JNI_DIR}" >&2
+            exit 1
+            ;;
+        1)
+            printf '%s\n' "${matches[0]}"
+            ;;
+        *)
+            echo "Found multiple JNI base jars:" >&2
+            printf '  %s\n' "${matches[@]}" >&2
+            echo "Remove the extra jars or provide ${exact_jar}." >&2
+            exit 1
+            ;;
+    esac
+}
+
+BASE_JAR=$(find_base_jni_jar)
+
+CLASSIFIER_JAR=$(find_single_jni_jar "${QDB_JNI_ARCH_CLASSIFIER}" "${JNI_DIR}/jni-${JNI_VERSION}-${QDB_JNI_ARCH_CLASSIFIER}.jar" "jni-*-${QDB_JNI_ARCH_CLASSIFIER}.jar")
 
 for arch in "${JNI_CLASSIFIERS[@]}"; do
-    classifier_jar="${JNI_DIR}/jni-${JNI_VERSION}-${arch}.jar"
-    if [[ ! -f "${classifier_jar}" ]]; then
-        echo "Missing JNI classifier jar required by pom.xml: ${classifier_jar}"
-        echo "kafka-connect-qdb declares all JNI runtime classifiers, you have to download/install all of them."
-        exit 1
-    fi
+    find_single_jni_jar "${arch}" "${JNI_DIR}/jni-${JNI_VERSION}-${arch}.jar" "jni-*-${arch}.jar" >/dev/null
 done
 
-"${MVN}" install:install-file -f pom-jni.xml
+"${MVN}" install:install-file -f pom-jni.xml -Dfile="${BASE_JAR}"
 for arch in "${JNI_CLASSIFIERS[@]}"; do
-    "${MVN}" install:install-file -f pom-jni-arch.xml -Darch="${arch}"
+    classifier_jar=$(find_single_jni_jar "${arch}" "${JNI_DIR}/jni-${JNI_VERSION}-${arch}.jar" "jni-*-${arch}.jar")
+    "${MVN}" install:install-file -f pom-jni-arch.xml -Darch="${arch}" -Dfile="${classifier_jar}"
 done
 
 popd
