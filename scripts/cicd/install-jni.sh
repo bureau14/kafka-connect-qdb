@@ -53,6 +53,13 @@ find_base_jni_jar() {
     local matches=()
     local jar
     while IFS= read -r -d '' jar; do
+        local filename
+        filename=$(basename "${jar}")
+
+        if [[ ! "${filename}" =~ ^jni-[0-9]+(\.[0-9]+)*(-SNAPSHOT)?\.jar$ ]]; then
+            continue
+        fi
+
         local is_classifier_jar=0
         for arch in "${JNI_CLASSIFIERS[@]}" "${QDB_JNI_ARCH_CLASSIFIER}"; do
             if [[ "${jar}" == *"-${arch}.jar" ]]; then
@@ -64,7 +71,7 @@ find_base_jni_jar() {
         if [[ "${is_classifier_jar}" -eq 0 ]]; then
             matches+=("${jar}")
         fi
-    done < <(find "${JNI_DIR}" -maxdepth 1 -type f -regextype posix-extended -regex ".*/jni-[0-9]+(\.[0-9]+)*(-SNAPSHOT)?\.jar" -print0 | sort -z)
+    done < <(find "${JNI_DIR}" -maxdepth 1 -type f -name "jni-*.jar" -print0 | sort -z)
 
     case "${#matches[@]}" in
         0)
