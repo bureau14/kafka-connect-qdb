@@ -2,7 +2,7 @@ agents:
   queue: "{queue}"
 
 label: "{name} ({slug})"
-key: "build-{slug}"
+step_id: build
 
 timeout_in_minutes: 20
 
@@ -22,6 +22,7 @@ plugins:
         clean: true
         projects:
           - project_id: "quasardb-build"
+            step: build
             output-dir: "qdb"
             extract: true
             files:
@@ -29,24 +30,28 @@ plugins:
               - "*-server.tar.zst!*"
               - "*-utils.tar.zst!*"
           - project_id: "qdb-api-jni"
+            step: build
             output-dir: "jni"
             extract: false
             variant: "linux-core2-release"
             files:
               - "jni-*.jar"
           - project_id: "qdb-api-jni"
+            step: build
             output-dir: "jni"
             extract: false
             variant: "freebsd-core2-release"
             files:
               - "jni-*.jar"
           - project_id: "qdb-api-jni"
+            step: build
             output-dir: "jni"
             extract: false
             variant: "macos-aarch64-release"
             files:
               - "jni-*.jar"
           - project_id: "qdb-api-jni"
+            step: build
             output-dir: "jni"
             extract: false
             variant: "windows-core2-release"
