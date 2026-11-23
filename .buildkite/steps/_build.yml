@@ -17,7 +17,7 @@ commands:
   - bash scripts/cicd/package.sh
 
 plugins:
-  - bureau14/qdb-artifacts#master:
+  - bureau14/qdb-artifacts#sc-20192/snapshot-dependencies:
       download:
         clean: true
         projects:
